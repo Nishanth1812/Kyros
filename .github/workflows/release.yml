@@ -1,4 +1,4 @@
-# Kyros release — deliberately manual only (workflow_dispatch).
+# Kyros release — runs on pushes to main, including merges from dev.
 #
 # This workflow builds and verifies a signed APK and uploads it as a build
 # artifact. It never creates a GitHub release, pushes a tag, or publishes
@@ -12,24 +12,16 @@
 # Create the base64 value locally, e.g.: base64 -w0 kyros-release.keystore
 # Keep the keystore and its passwords out of the repository and out of logs.
 #
-# Run this from 'main' or a 'release/*' branch with the exact version from
-# package.json, app.json and android/app/build.gradle (X.Y.Z).
+# Release versions are derived from the version in the repository and the
+# workflow run number. Rerunning the same run keeps the same version.
 name: Release (signed APK)
 
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Exact version to release (X.Y.Z); must match package.json, app.json and versionName'
-        required: true
-        type: string
+  push:
+    branches: [main]
 
 permissions:
   contents: read
-
-concurrency:
-  group: release-apk
-  cancel-in-progress: false
 
 env:
   NODE_VERSION: '22'
@@ -54,37 +46,18 @@ jobs:
         with:
           persist-credentials: false
 
-      # Validate dispatch input and ref BEFORE any expensive or signing work.
-      # All untrusted values are passed in via env, never interpolated into run.
-      - name: Validate release context
-        env:
-          EXPECTED_VERSION: ${{ inputs.version }}
+      - name: Set release version
+        id: version
         run: |
           set -euo pipefail
-          if [ "$GITHUB_REF_TYPE" != "branch" ]; then
-            echo "::error::Release builds must run from a branch, not a tag or detached ref."
-            exit 1
-          fi
-          case "$GITHUB_REF_NAME" in
-            main|release/*) ;;
-            *)
-              echo "::error::Release builds are only allowed on 'main' or 'release/*' (got '$GITHUB_REF_NAME')."
-              exit 1
-              ;;
-          esac
-          if ! printf '%s' "$EXPECTED_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-            echo "::error::Version must be numeric X.Y.Z (e.g. 0.1.0)."
-            exit 1
-          fi
           pkg_version=$(node -p "require('./package.json').version")
           app_version=$(node -p "require('./app.json').expo.version")
           app_version_code=$(node -p "require('./app.json').expo.android.versionCode")
           gradle_version=$(sed -n 's/^[[:space:]]*versionName "\([^"]*\)".*/\1/p' android/app/build.gradle | head -n 1)
           version_code=$(sed -n 's/^[[:space:]]*versionCode \([0-9][0-9]*\).*/\1/p' android/app/build.gradle | head -n 1)
-          if [ "$pkg_version" != "$EXPECTED_VERSION" ] || \
-             [ "$app_version" != "$EXPECTED_VERSION" ] || \
-             [ "$gradle_version" != "$EXPECTED_VERSION" ]; then
-            echo "::error::Version mismatch: expected $EXPECTED_VERSION; package.json=$pkg_version, app.json=$app_version, versionName=$gradle_version"
+          if ! printf '%s' "$app_version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || \
+             [ "$pkg_version" != "$app_version" ] || [ "$gradle_version" != "$app_version" ]; then
+            echo "::error::Base versions in package.json, app.json and build.gradle must match and use X.Y.Z."
             exit 1
           fi
           if [ -z "$version_code" ] || [ "$version_code" -lt 1 ]; then
@@ -95,7 +68,23 @@ jobs:
             echo "::error::app.json versionCode does not match android/app/build.gradle."
             exit 1
           fi
-          echo "Release context OK: version $EXPECTED_VERSION (versionCode $version_code) on $GITHUB_REF_NAME"
+          IFS=. read -r major minor patch <<< "$app_version"
+          release_version="$major.$minor.$((10#$patch + GITHUB_RUN_NUMBER))"
+          release_code=$((version_code + GITHUB_RUN_NUMBER))
+          if [ "$release_code" -gt 2100000000 ]; then
+            echo "::error::Android versionCode exceeds the supported limit."
+            exit 1
+          fi
+          sed -i -E "s/^([[:space:]]*versionName )\"[^\"]*\"/\1\"$release_version\"/; s/^([[:space:]]*versionCode )[0-9]+/\1$release_code/" android/app/build.gradle
+          RELEASE_VERSION="$release_version" RELEASE_CODE="$release_code" node -e '
+            const fs = require("fs");
+            const app = JSON.parse(fs.readFileSync("app.json", "utf8"));
+            app.expo.version = process.env.RELEASE_VERSION;
+            app.expo.android.versionCode = Number(process.env.RELEASE_CODE);
+            fs.writeFileSync("app.json", JSON.stringify(app, null, 2) + "\n");
+          '
+          echo "version=$release_version" >> "$GITHUB_OUTPUT"
+          echo "Release version: $release_version (versionCode $release_code)"
 
       - name: Set up Node.js (npm cache)
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -230,7 +219,7 @@ jobs:
       - name: Upload verified signed APK
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: kyros-${{ inputs.version }}-signed-apk
+          name: kyros-${{ steps.version.outputs.version }}-signed-apk
           path: ${{ env.APK_PATH }}
           if-no-files-found: error
           retention-days: 30

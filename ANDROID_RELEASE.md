@@ -233,10 +233,10 @@ Issue #8 introduces two GitHub Actions automations:
 
 - **Checks on pull requests to `dev` or `main` and pushes to those branches.**
   They run tests, a type check and an Android debug build without release secrets.
-- **Signed APK, manual trigger only.** A workflow started by hand assembles the
-  release build from `android/`, verifies it (§5), and uploads the APK as an
-  artifact to download and distribute. It is not tied to any push or PR, so a
-  release is produced only when you deliberately start it.
+- **Signed APK on push to `main`.** A push to `main`, including a merge from
+  `dev`, builds the release from `android/`, verifies it (§5), and uploads the
+  APK as a GitHub Actions artifact. Pull requests and pushes to `dev` do not
+  produce release APKs.
 
 **Secrets.** The keystore and passwords are never committed. In CI they live as
 encrypted GitHub Actions repository secrets. CI decodes the keystore into a
@@ -258,7 +258,10 @@ upgrades. Configure these repository secrets before triggering the workflow:
 need none of these secrets; release builds require all four values and refuse to
 build if any is missing (§4). A debug build cannot upgrade a release install (§6).
 
-**Versioning.** Before each CI release, set `expo.version` and increment
-`expo.android.versionCode` in `app.json`, then prebuild and re-apply signing (§3).
-`versionCode` must rise for a new APK to install as an upgrade, and every release
-must be signed with the same key (§1, §6).
+**Versioning.** The source versions in `package.json`, `app.json`, and
+`android/app/build.gradle` must match, as must both Android version codes. Each
+release adds its workflow run number to the source patch and version code for
+the built APK; the first run from 0.1.0/version code 1 produces 0.1.1/code 2.
+Rerunning a release uses the same number; failed runs can leave gaps. The
+repository files are not changed by the workflow. Keep the same signing key for
+every release and back it up (§1, §6).
