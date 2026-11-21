@@ -229,16 +229,20 @@ example. Re-run the checks in §2 and §5 after restoring them.
 
 ## 9. Automated checks and signed APK releases (CI)
 
-Issue #8 adds GitHub Actions automations:
+The single push-only GitHub Actions workflow handles checks and signed APK releases:
 
-- **Checks on pushes to `dev` or `main` only.** They run tests, a type check and
-  an Android debug build without release secrets.
+- **Checks on pushes to `dev` or `main` only.** Tests and typecheck run once.
+  On `dev`, the workflow then builds an Android debug APK without release
+  secrets for `arm64-v8a` phones and `x86_64` emulators and uploads it for
+  pre-release feature testing. On `main`, it instead builds a signed release
+  APK with all four configured Android ABIs after the quality checks pass.
 - **Signed APK on push to `main`.** A push to `main`, including a merge from
   `dev`, builds the release from `android/`, verifies it (§5), and uploads the
   APK as a GitHub Actions artifact. Pushes to `dev` do not produce release APKs.
 
 **Secrets.** The keystore and passwords are never committed. In CI they live as
-encrypted GitHub Actions repository secrets. CI decodes the keystore into a
+encrypted GitHub Actions repository secrets, exposed only to the `main` release
+job. That job decodes the keystore into a
 temporary file and supplies the other values as environment variables. Do not
 pass them as `-P`/command-line arguments and do not print them: GitHub masks
 registered secret values in logs, but a value reconstructed or echoed by a script
@@ -248,19 +252,22 @@ upgrades. Configure these repository secrets before triggering the workflow:
 
 | Purpose | GitHub Actions secret |
 | --- | --- |
-| Keystore (base64-encoded) | `KYROS_RELEASE_KEYSTORE_BASE64` |
-| Store password | `KYROS_RELEASE_STORE_PASSWORD` |
+| Keystore (base64-encoded) | `RELEASE_KEYSTORE_BASE64` |
+| Store password | `RELEASE_STORE_PASSWORD` |
 | Key alias | `KYROS_RELEASE_KEY_ALIAS` |
-| Key password | `KYROS_RELEASE_KEY_PASSWORD` |
+| Key password | `RELEASE_KEY_PASSWORD` |
 
 **Debug vs release.** Debug builds (`npm run android`) use the template key and
 need none of these secrets; release builds require all four values and refuse to
 build if any is missing (§4). A debug build cannot upgrade a release install (§6).
 
 **Versioning.** The source versions in `package.json`, `app.json`, and
-`android/app/build.gradle` must match, as must both Android version codes. Each
-release adds its workflow run number to the source patch and version code for
-the built APK; the first run from 0.1.0/version code 1 produces 0.1.1/code 2.
-Rerunning a release uses the same number; failed runs can leave gaps. The
-repository files are not changed by the workflow. Keep the same signing key for
-every release and back it up (§1, §6).
+`android/app/build.gradle` must match, as must both Android version codes. After
+the signed APK passes alignment and certificate verification, CI creates an
+annotated `vX.Y.Z` tag on the `main` commit and records the APK's versionCode in
+the tag message. Each later main release increments the latest tagged patch and
+versionCode by one. The first release from 0.1.0/version code 1 is 0.1.1/code 2.
+Rerunning the same main commit reuses its tag and version. A failed build or
+signature check creates no tag, so it does not consume a version. The workflow
+does not change the repository's source version files. Keep release tags and the
+same signing key for every release; back up the key (§1, §6).
