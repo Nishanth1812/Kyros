@@ -23,8 +23,8 @@ keystore and credentials; see [ANDROID_RELEASE.md](ANDROID_RELEASE.md).
 
 ## Automated checks and releases
 
-GitHub Actions runs tests, a type check and an Android debug build on pull
-requests to `dev` or `main`, and on pushes to those branches.
+GitHub Actions runs tests, a type check and an Android debug build only on
+pushes to `dev` or `main`.
 
 A separate workflow produces a signed release APK on every push to `main`,
 including a merge from `dev`. It verifies the build and uploads the APK as an
