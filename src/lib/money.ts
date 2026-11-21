@@ -63,3 +63,25 @@ export function parseAmountToMinorUnits(raw: string): AmountParseResult {
   }
   return { ok: true, amountMinor };
 }
+
+export type AmountFeedback = { amountMinor?: string };
+
+/**
+ * Reconcile a displayed amount error after the user edits the amount text.
+ * Uses the same parser as submission, so feedback always matches what would
+ * actually be saved. Only refreshes an error that is already visible (i.e.
+ * after a submit attempt); other field/form errors are left untouched.
+ */
+export function refreshAmountError<E extends AmountFeedback>(
+  errors: E,
+  raw: string
+): E {
+  if (!errors.amountMinor) return errors;
+
+  const parsed = parseAmountToMinorUnits(raw);
+  if (!parsed.ok) return { ...errors, amountMinor: parsed.error };
+
+  const next = { ...errors };
+  delete next.amountMinor;
+  return next;
+}
