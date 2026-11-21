@@ -21,6 +21,21 @@ The native Android project lives in `android/`. Prebuilding again can overwrite
 native changes, including release signing. Release builds require an external
 keystore and credentials; see [ANDROID_RELEASE.md](ANDROID_RELEASE.md).
 
+## Automated checks and releases
+
+GitHub Actions runs tests, a type check and an Android debug build on pull
+requests to `dev` or `main`, and on pushes to those branches.
+
+A separate workflow produces a signed release APK on every push to `main`,
+including a merge from `dev`. It verifies the build and uploads the APK as an
+artifact to download and distribute. The release keystore and its passwords are held
+as encrypted GitHub Actions repository secrets. The workflow decodes the keystore
+into a temporary file and supplies passwords through environment variables. Back
+up the keystore outside GitHub so future upgrades stay signed with the same
+key. Debug builds use the standard template key and need none of this. See
+[ANDROID_RELEASE.md](ANDROID_RELEASE.md) for setup, release steps, and versioning
+rules.
+
 ## Structure
 
 ```

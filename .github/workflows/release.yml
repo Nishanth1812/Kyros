@@ -1,0 +1,229 @@
+# Kyros release — runs on pushes to main, including merges from dev.
+#
+# This workflow builds and verifies a signed APK and uploads it as a build
+# artifact. It never creates a GitHub release, pushes a tag, or publishes
+# anywhere public.
+#
+# Required repository secrets (Settings -> Secrets and variables -> Actions):
+#   KYROS_RELEASE_KEYSTORE_BASE64  base64 of the release .keystore/.jks file
+#   KYROS_RELEASE_STORE_PASSWORD   keystore password
+#   KYROS_RELEASE_KEY_ALIAS        key alias (e.g. kyros)
+#   KYROS_RELEASE_KEY_PASSWORD     key password
+# Create the base64 value locally, e.g.: base64 -w0 kyros-release.keystore
+# Keep the keystore and its passwords out of the repository and out of logs.
+#
+# Release versions are derived from the version in the repository and the
+# workflow run number. Rerunning the same run keeps the same version.
+name: Release (signed APK)
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '22'
+  BUN_VERSION: '1.4.0'
+  JAVA_VERSION: '21'
+  ANDROID_CMD_LINE_TOOLS: '15859902'
+  ANDROID_SDK_PACKAGES: >-
+    platform-tools
+    platforms;android-36
+    platforms;android-37.0
+    build-tools;37.0.0
+    ndk;27.1.12297006
+  APK_PATH: android/app/build/outputs/apk/release/app-release.apk
+
+jobs:
+  signed-apk:
+    name: Build and verify signed APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set release version
+        id: version
+        run: |
+          set -euo pipefail
+          pkg_version=$(node -p "require('./package.json').version")
+          app_version=$(node -p "require('./app.json').expo.version")
+          app_version_code=$(node -p "require('./app.json').expo.android.versionCode")
+          gradle_version=$(sed -n 's/^[[:space:]]*versionName "\([^"]*\)".*/\1/p' android/app/build.gradle | head -n 1)
+          version_code=$(sed -n 's/^[[:space:]]*versionCode \([0-9][0-9]*\).*/\1/p' android/app/build.gradle | head -n 1)
+          if ! printf '%s' "$app_version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || \
+             [ "$pkg_version" != "$app_version" ] || [ "$gradle_version" != "$app_version" ]; then
+            echo "::error::Base versions in package.json, app.json and build.gradle must match and use X.Y.Z."
+            exit 1
+          fi
+          if [ -z "$version_code" ] || [ "$version_code" -lt 1 ]; then
+            echo "::error::versionCode must be a positive integer."
+            exit 1
+          fi
+          if [ "$app_version_code" != "$version_code" ]; then
+            echo "::error::app.json versionCode does not match android/app/build.gradle."
+            exit 1
+          fi
+          IFS=. read -r major minor patch <<< "$app_version"
+          release_version="$major.$minor.$((10#$patch + GITHUB_RUN_NUMBER))"
+          release_code=$((version_code + GITHUB_RUN_NUMBER))
+          if [ "$release_code" -gt 2100000000 ]; then
+            echo "::error::Android versionCode exceeds the supported limit."
+            exit 1
+          fi
+          sed -i -E "s/^([[:space:]]*versionName )\"[^\"]*\"/\1\"$release_version\"/; s/^([[:space:]]*versionCode )[0-9]+/\1$release_code/" android/app/build.gradle
+          RELEASE_VERSION="$release_version" RELEASE_CODE="$release_code" node -e '
+            const fs = require("fs");
+            const app = JSON.parse(fs.readFileSync("app.json", "utf8"));
+            app.expo.version = process.env.RELEASE_VERSION;
+            app.expo.android.versionCode = Number(process.env.RELEASE_CODE);
+            fs.writeFileSync("app.json", JSON.stringify(app, null, 2) + "\n");
+          '
+          echo "version=$release_version" >> "$GITHUB_OUTPUT"
+          echo "Release version: $release_version (versionCode $release_code)"
+
+      - name: Set up Node.js (npm cache)
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies from lockfile
+        run: npm ci
+
+      # Same quality gates as CI must pass before a signed build is produced.
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Run tests
+        run: bun test tests
+
+      - name: Run TypeScript check
+        run: npm run typecheck
+
+      - name: Set up JDK 21 (Gradle dependency and wrapper caches)
+        uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: gradle
+          cache-dependency-path: |
+            android/**/*.gradle*
+            android/gradle.properties
+            android/gradle/wrapper/gradle-wrapper.properties
+
+      - name: Configure Android SDK and keystore paths
+        run: |
+          echo "ANDROID_SDK_ROOT=$RUNNER_TEMP/android-sdk" >> "$GITHUB_ENV"
+          echo "KEYSTORE_FILE=$RUNNER_TEMP/kyros-release.jks" >> "$GITHUB_ENV"
+
+      - name: Cache Android SDK packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.ANDROID_SDK_ROOT }}
+          key: android-sdk-${{ runner.os }}-${{ runner.arch }}-cmdline-${{ env.ANDROID_CMD_LINE_TOOLS }}-api36-api37-bt37-ndk27
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
+        with:
+          cmdline-tools-version: ${{ env.ANDROID_CMD_LINE_TOOLS }}
+          packages: ${{ env.ANDROID_SDK_PACKAGES }}
+          log-accepted-android-sdk-licenses: false
+
+      # Fail fast, and never echo a secret value. Only variable names are logged.
+      - name: Validate signing secrets are present
+        env:
+          KYROS_KEYSTORE_BASE64: ${{ secrets.KYROS_RELEASE_KEYSTORE_BASE64 }}
+          KYROS_RELEASE_STORE_PASSWORD: ${{ secrets.KYROS_RELEASE_STORE_PASSWORD }}
+          KYROS_RELEASE_KEY_ALIAS: ${{ secrets.KYROS_RELEASE_KEY_ALIAS }}
+          KYROS_RELEASE_KEY_PASSWORD: ${{ secrets.KYROS_RELEASE_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for name in KYROS_KEYSTORE_BASE64 KYROS_RELEASE_STORE_PASSWORD KYROS_RELEASE_KEY_ALIAS KYROS_RELEASE_KEY_PASSWORD; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::Missing required repository secret: $name (see workflow header for setup)."
+              exit 1
+            fi
+          done
+          echo "All release signing secrets are configured (values not shown)."
+
+      - name: Decode release keystore outside the workspace
+        env:
+          KYROS_KEYSTORE_BASE64: ${{ secrets.KYROS_RELEASE_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          umask 077
+          if ! printf '%s' "$KYROS_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_FILE"; then
+            echo "::error::KYROS_RELEASE_KEYSTORE_BASE64 is not valid base64."
+            rm -f "$KEYSTORE_FILE"
+            exit 1
+          fi
+          test -s "$KEYSTORE_FILE"
+          echo "Release keystore decoded to a temporary file (path not logged)."
+
+      - name: Assemble signed release APK
+        env:
+          KYROS_RELEASE_STORE_FILE: ${{ env.KEYSTORE_FILE }}
+          KYROS_RELEASE_STORE_PASSWORD: ${{ secrets.KYROS_RELEASE_STORE_PASSWORD }}
+          KYROS_RELEASE_KEY_ALIAS: ${{ secrets.KYROS_RELEASE_KEY_ALIAS }}
+          KYROS_RELEASE_KEY_PASSWORD: ${{ secrets.KYROS_RELEASE_KEY_PASSWORD }}
+        working-directory: android
+        # The Gradle guard refuses to build a release without complete signing
+        # credentials, so this cannot silently emit a debug-signed APK.
+        run: bash ./gradlew --no-daemon :app:assembleRelease
+
+      # Verify alignment, signature validity, and that the signer certificate
+      # matches the configured keystore. The upload step runs only if this passes.
+      - name: Verify signed APK
+        env:
+          KT_STORE_PASSWORD: ${{ secrets.KYROS_RELEASE_STORE_PASSWORD }}
+          KT_KEY_ALIAS: ${{ secrets.KYROS_RELEASE_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          if [ ! -s "$APK_PATH" ]; then
+            echo "::error::Signed APK not found at $APK_PATH."
+            exit 1
+          fi
+          build_tools="$(printf '%s\n' "$ANDROID_SDK_ROOT"/build-tools/* | sort -V | tail -n 1)"
+          if [ ! -x "$build_tools/zipalign" ] || [ ! -x "$build_tools/apksigner" ]; then
+            echo "::error::zipalign/apksigner not found in $build_tools."
+            exit 1
+          fi
+          "$build_tools/zipalign" -c -v 4 "$APK_PATH" >/dev/null
+          echo "zipalign: APK is correctly aligned."
+
+          cert_output="$("$build_tools/apksigner" verify --verbose --print-certs "$APK_PATH")"
+          printf '%s\n' "$cert_output"
+          echo "apksigner: APK signature is valid."
+
+          # keytool reads the password from an env var, so it never appears in
+          # the command line or logs. Only the public fingerprint is printed.
+          expected="$(keytool -list -v -keystore "$KEYSTORE_FILE" -alias "$KT_KEY_ALIAS" \
+            -storepass:env KT_STORE_PASSWORD 2>/dev/null \
+            | awk -F': ' '/^[[:space:]]*SHA256:/ {gsub(/:/, "", $2); print toupper($2); exit}')"
+          actual="$(printf '%s\n' "$cert_output" \
+            | awk -F': ' '/certificate SHA-256 digest/ {gsub(/:/, "", $2); print toupper($2); exit}')"
+          if [ -z "$expected" ] || [ -z "$actual" ] || [ "$expected" != "$actual" ]; then
+            echo "::error::APK signer certificate does not match the configured release keystore."
+            exit 1
+          fi
+          echo "Verified: APK signed by the configured release key ($expected)."
+
+      - name: Upload verified signed APK
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: kyros-${{ steps.version.outputs.version }}-signed-apk
+          path: ${{ env.APK_PATH }}
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Remove temporary keystore
+        if: always()
+        run: rm -f "$KEYSTORE_FILE"
