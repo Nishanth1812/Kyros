@@ -27,8 +27,10 @@ GitHub Actions uses one push-only workflow on `dev` and `main`. Tests and the
 TypeScript check run once per push. An Android debug build runs on `dev`; pushes
 to `main`, including merges from `dev`, instead build, verify, and upload a
 signed release APK artifact. The debug APK is uploaded from `dev` for pre-release
-feature testing. The release keystore and its passwords are held as
-encrypted GitHub Actions repository secrets, available only to the release job.
+feature testing and includes arm64 devices plus x86_64 emulators. Signed
+releases retain all four configured ABIs. The release keystore and its
+passwords are held as encrypted GitHub Actions repository secrets, available
+only to the release job.
 The workflow decodes the keystore into a temporary file and supplies passwords
 through environment variables. Back up the keystore outside GitHub so future
 upgrades stay signed with the same key. Debug builds use the standard template
