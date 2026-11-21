@@ -3,7 +3,8 @@
 This document describes how to produce a **signed** release build of Kyros 0.1 and
 how to install and upgrade it. It is written for the repository's **actual**
 workflow: an Expo SDK 58 app whose native Android project lives in `android/` and
-is built with the Android Gradle wrapper from that folder.
+is built with the Android Gradle wrapper from that folder. Automated checks and
+the signed-APK release workflow are covered in §9.
 
 **Scope of this work:** the Gradle configuration below was changed so release
 builds no longer use the debug key. **No APK has been built or verified here.**
@@ -225,3 +226,39 @@ example. Re-run the checks in §2 and §5 after restoring them.
 - Missing credentials cause a clear, early failure rather than a debug-signed
   or unsigned release artifact.
 - No APK is claimed, committed, or verified by this documentation change.
+
+## 9. Automated checks and signed APK releases (CI)
+
+Issue #8 introduces two GitHub Actions automations:
+
+- **Checks on pull requests to `dev` or `main` and pushes to those branches.**
+  They run tests, a type check and an Android debug build without release secrets.
+- **Signed APK, manual trigger only.** A workflow started by hand assembles the
+  release build from `android/`, verifies it (§5), and uploads the APK as an
+  artifact to download and distribute. It is not tied to any push or PR, so a
+  release is produced only when you deliberately start it.
+
+**Secrets.** The keystore and passwords are never committed. In CI they live as
+encrypted GitHub Actions repository secrets. CI decodes the keystore into a
+temporary file and supplies the other values as environment variables. Do not
+pass them as `-P`/command-line arguments and do not print them: GitHub masks
+registered secret values in logs, but a value reconstructed or echoed by a script
+is not. Protect the secrets with repository access controls and back up the
+keystore and passwords outside GitHub (§1)—losing them blocks future signed
+upgrades. Configure these repository secrets before triggering the workflow:
+
+| Purpose | GitHub Actions secret |
+| --- | --- |
+| Keystore (base64-encoded) | `KYROS_RELEASE_KEYSTORE_BASE64` |
+| Store password | `KYROS_RELEASE_STORE_PASSWORD` |
+| Key alias | `KYROS_RELEASE_KEY_ALIAS` |
+| Key password | `KYROS_RELEASE_KEY_PASSWORD` |
+
+**Debug vs release.** Debug builds (`npm run android`) use the template key and
+need none of these secrets; release builds require all four values and refuse to
+build if any is missing (§4). A debug build cannot upgrade a release install (§6).
+
+**Versioning.** Before each CI release, set `expo.version` and increment
+`expo.android.versionCode` in `app.json`, then prebuild and re-apply signing (§3).
+`versionCode` must rise for a new APK to install as an upgrade, and every release
+must be signed with the same key (§1, §6).

@@ -1,0 +1,114 @@
+# Kyros CI — runs on pull requests to dev/main and pushes to dev/main.
+# No repository secrets are needed; forks and untrusted PR code run with a
+# read-only token and are never given signing credentials.
+name: CI
+
+on:
+  pull_request:
+    branches: [dev, main]
+  push:
+    branches: [dev, main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22' # README requires >= 22.13; latest 22.x patch is used.
+  BUN_VERSION: '1.4.0'
+  JAVA_VERSION: '21' # Gradle 9.4.1 / AGP require JDK 21.
+  ANDROID_CMD_LINE_TOOLS: '15859902' # cmdline-tools 22.0
+  # Versions come from node_modules/react-native/gradle/libs.versions.toml:
+  # compileSdk 37, buildTools 37.0.0, ndk 27.1.12297006 (targetSdk 36).
+  ANDROID_SDK_PACKAGES: >-
+    platform-tools
+    platforms;android-36
+    platforms;android-37.0
+    build-tools;37.0.0
+    ndk;27.1.12297006
+
+jobs:
+  quality:
+    name: Tests and type check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js (npm cache)
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies from lockfile
+        run: npm ci
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Run tests
+        run: bun test tests
+
+      - name: Run TypeScript check
+        run: npm run typecheck
+
+  android-debug:
+    name: Android debug build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js (npm cache)
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies from lockfile
+        run: npm ci
+
+      - name: Set up JDK 21 (Gradle dependency and wrapper caches)
+        uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: gradle
+          cache-dependency-path: |
+            android/**/*.gradle*
+            android/gradle.properties
+            android/gradle/wrapper/gradle-wrapper.properties
+
+      # Use a job-owned SDK directory so the SDK cache is stable and writable.
+      - name: Configure Android SDK location
+        run: echo "ANDROID_SDK_ROOT=$RUNNER_TEMP/android-sdk" >> "$GITHUB_ENV"
+
+      - name: Cache Android SDK packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.ANDROID_SDK_ROOT }}
+          key: android-sdk-${{ runner.os }}-${{ runner.arch }}-cmdline-${{ env.ANDROID_CMD_LINE_TOOLS }}-api36-api37-bt37-ndk27
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
+        with:
+          cmdline-tools-version: ${{ env.ANDROID_CMD_LINE_TOOLS }}
+          packages: ${{ env.ANDROID_SDK_PACKAGES }}
+          log-accepted-android-sdk-licenses: false
+
+      - name: Assemble debug APK
+        working-directory: android
+        # gradlew is committed without the executable bit; invoke it via bash.
+        run: bash ./gradlew --no-daemon :app:assembleDebug
