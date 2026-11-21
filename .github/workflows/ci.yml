@@ -65,8 +65,6 @@ jobs:
     if: github.ref == 'refs/heads/dev'
     needs: quality
     runs-on: ubuntu-latest
-    env:
-      ANDROID_SDK_ROOT: ${{ runner.temp }}/android-sdk
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -94,10 +92,13 @@ jobs:
             android/gradle.properties
             android/gradle/wrapper/gradle-wrapper.properties
 
+      - name: Configure Android SDK location
+        run: echo "ANDROID_SDK_ROOT=$RUNNER_TEMP/android-sdk" >> "$GITHUB_ENV"
+
       - name: Cache Android SDK packages
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: ${{ env.ANDROID_SDK_ROOT }}
+          path: ${{ runner.temp }}/android-sdk
           key: android-sdk-${{ runner.os }}-${{ runner.arch }}-cmdline-${{ env.ANDROID_CMD_LINE_TOOLS }}-api36-api37-bt37-ndk27
 
       - name: Set up Android SDK
@@ -129,8 +130,6 @@ jobs:
       contents: write
     env:
       APK_PATH: android/app/build/outputs/apk/release/app-release.apk
-      ANDROID_SDK_ROOT: ${{ runner.temp }}/android-sdk
-      KEYSTORE_FILE: ${{ runner.temp }}/kyros-release.jks
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -239,10 +238,15 @@ jobs:
             android/gradle.properties
             android/gradle/wrapper/gradle-wrapper.properties
 
+      - name: Configure Android SDK and keystore paths
+        run: |
+          echo "ANDROID_SDK_ROOT=$RUNNER_TEMP/android-sdk" >> "$GITHUB_ENV"
+          echo "KEYSTORE_FILE=$RUNNER_TEMP/kyros-release.jks" >> "$GITHUB_ENV"
+
       - name: Cache Android SDK packages
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: ${{ env.ANDROID_SDK_ROOT }}
+          path: ${{ runner.temp }}/android-sdk
           key: android-sdk-${{ runner.os }}-${{ runner.arch }}-cmdline-${{ env.ANDROID_CMD_LINE_TOOLS }}-api36-api37-bt37-ndk27
 
       - name: Set up Android SDK
@@ -283,7 +287,7 @@ jobs:
 
       - name: Assemble signed release APK
         env:
-          KYROS_RELEASE_STORE_FILE: ${{ env.KEYSTORE_FILE }}
+          KYROS_RELEASE_STORE_FILE: ${{ runner.temp }}/kyros-release.jks
           KYROS_RELEASE_STORE_PASSWORD: ${{ secrets.KYROS_RELEASE_STORE_PASSWORD }}
           KYROS_RELEASE_KEY_ALIAS: ${{ secrets.KYROS_RELEASE_KEY_ALIAS }}
           KYROS_RELEASE_KEY_PASSWORD: ${{ secrets.KYROS_RELEASE_KEY_PASSWORD }}
