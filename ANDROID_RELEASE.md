@@ -252,10 +252,10 @@ upgrades. Configure these repository secrets before triggering the workflow:
 
 | Purpose | GitHub Actions secret |
 | --- | --- |
-| Keystore (base64-encoded) | `KYROS_RELEASE_KEYSTORE_BASE64` |
-| Store password | `KYROS_RELEASE_STORE_PASSWORD` |
+| Keystore (base64-encoded) | `RELEASE_KEYSTORE_BASE64` |
+| Store password | `RELEASE_STORE_PASSWORD` |
 | Key alias | `KYROS_RELEASE_KEY_ALIAS` |
-| Key password | `KYROS_RELEASE_KEY_PASSWORD` |
+| Key password | `RELEASE_KEY_PASSWORD` |
 
 **Debug vs release.** Debug builds (`npm run android`) use the template key and
 need none of these secrets; release builds require all four values and refuse to
