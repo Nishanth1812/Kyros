@@ -233,8 +233,9 @@ The single push-only GitHub Actions workflow handles checks and signed APK relea
 
 - **Checks on pushes to `dev` or `main` only.** Tests and typecheck run once.
   On `dev`, the workflow then builds an Android debug APK without release
-  secrets and uploads it for pre-release feature testing. On `main`, it instead
-  builds a signed release APK after the quality checks pass.
+  secrets for `arm64-v8a` phones and `x86_64` emulators and uploads it for
+  pre-release feature testing. On `main`, it instead builds a signed release
+  APK with all four configured Android ABIs after the quality checks pass.
 - **Signed APK on push to `main`.** A push to `main`, including a merge from
   `dev`, builds the release from `android/`, verifies it (§5), and uploads the
   APK as a GitHub Actions artifact. Pushes to `dev` do not produce release APKs.
