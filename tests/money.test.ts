@@ -1,5 +1,9 @@
 import { describe, expect, test } from 'bun:test';
-import { formatMinorUnits, parseAmountToMinorUnits } from '../src/lib/money';
+import {
+  formatMinorUnits,
+  parseAmountToMinorUnits,
+  refreshAmountError,
+} from '../src/lib/money';
 import { MAX_AMOUNT_MINOR_UNITS } from '../src/storage';
 
 describe('money', () => {
@@ -98,6 +102,48 @@ describe('money', () => {
         ok: false,
         error: 'Amount is too large.',
       });
+    });
+  });
+
+  describe('refreshAmountError - amount feedback while editing', () => {
+    test('clears the amount error once the edit is valid, preserving other errors', () => {
+      const errors = {
+        amountMinor: 'Amount is required.',
+        date: 'Date is required.',
+        description: 'Description must be a string.',
+        form: 'Could not save the transaction. Please try again.',
+      };
+
+      expect(refreshAmountError(errors, '125.50')).toEqual({
+        date: 'Date is required.',
+        description: 'Description must be a string.',
+        form: 'Could not save the transaction. Please try again.',
+      });
+      // Original state is not mutated.
+      expect(errors.amountMinor).toBe('Amount is required.');
+    });
+
+    test('keeps validating an edit that is still invalid, with the matching message', () => {
+      const errors = { amountMinor: 'Amount is required.', form: 'Save failed.' };
+
+      expect(refreshAmountError(errors, 'abc')).toEqual({
+        amountMinor: 'Enter a valid amount, e.g. 125 or 125.50.',
+        form: 'Save failed.',
+      });
+      expect(refreshAmountError(errors, '-5')).toEqual({
+        amountMinor: 'Amount cannot be negative.',
+        form: 'Save failed.',
+      });
+      expect(refreshAmountError(errors, '')).toEqual({
+        amountMinor: 'Amount is required.',
+        form: 'Save failed.',
+      });
+    });
+
+    test('does not surface an amount error before one has been shown on submit', () => {
+      const errors = { date: 'Date is required.' };
+
+      expect(refreshAmountError(errors, 'abc')).toBe(errors);
     });
   });
 

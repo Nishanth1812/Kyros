@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 
 import { todayISO } from '../lib/dates';
-import { parseAmountToMinorUnits } from '../lib/money';
+import { parseAmountToMinorUnits, refreshAmountError } from '../lib/money';
 import {
   validateTransactionInput,
   type NewTransactionInput,
@@ -46,6 +46,14 @@ export default function TransactionForm({
   // the `submitting` flag alone still reads false for a second tap that lands
   // before the re-render.
   const submittingRef = useRef(false);
+
+  const handleAmountChange = (text: string) => {
+    setAmount(text);
+    // Keep the visible amount error in sync with the current text: clear it
+    // once the value is valid, refresh it if the edit is still invalid, and
+    // leave date/description/form errors alone.
+    setErrors((prev) => refreshAmountError(prev, text));
+  };
 
   const handleSubmit = async () => {
     if (submittingRef.current) return;
@@ -127,7 +135,7 @@ export default function TransactionForm({
       <Text style={[styles.label, styles.labelSpaced]}>Amount (₹)</Text>
       <TextInput
         value={amount}
-        onChangeText={setAmount}
+        onChangeText={handleAmountChange}
         keyboardType="decimal-pad"
         placeholder="0.00"
         maxLength={18}
