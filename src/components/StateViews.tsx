@@ -1,0 +1,129 @@
+import { MaterialIcons } from '@expo/vector-icons';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+
+import { colors, fontSize, radius, spacing } from '../theme/theme';
+
+export function LoadingView() {
+  return (
+    <View style={styles.centered} accessibilityRole="progressbar" accessibilityLabel="Loading transactions">
+      <ActivityIndicator size="large" color={colors.primary} />
+      <Text style={styles.loadingText}>Loading transactions…</Text>
+    </View>
+  );
+}
+
+export function ErrorView({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry: () => void;
+}) {
+  return (
+    <View style={styles.centered}>
+      <MaterialIcons name="error-outline" size={48} color={colors.expense} />
+      <Text style={styles.stateTitle} accessibilityRole="header">
+        Couldn’t load transactions
+      </Text>
+      <Text style={styles.stateText}>{message}</Text>
+      <Pressable
+        onPress={onRetry}
+        accessibilityRole="button"
+        accessibilityLabel="Try again"
+        style={({ pressed }) => [styles.button, pressed ? styles.buttonPressed : null]}
+      >
+        <Text style={styles.buttonText}>Try again</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+export function ErrorBanner({ message }: { message: string }) {
+  return (
+    <View style={styles.banner} accessibilityRole="alert" accessibilityLiveRegion="polite">
+      <Text style={styles.bannerText}>{message}</Text>
+    </View>
+  );
+}
+
+export function EmptyState({ onAdd }: { onAdd: () => void }) {
+  return (
+    <View style={styles.centered}>
+      <MaterialIcons name="receipt-long" size={56} color={colors.primary} />
+      <Text style={styles.stateTitle} accessibilityRole="header">
+        No transactions yet
+      </Text>
+      <Text style={styles.stateText}>
+        Add your first income or expense. Entries are stored on this device and
+        stay available offline.
+      </Text>
+      <Pressable
+        onPress={onAdd}
+        accessibilityRole="button"
+        accessibilityLabel="Add your first transaction"
+        style={({ pressed }) => [styles.button, pressed ? styles.buttonPressed : null]}
+      >
+        <Text style={styles.buttonText}>Add your first transaction</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.xxl,
+  },
+  loadingText: {
+    marginTop: spacing.md,
+    fontSize: fontSize.body,
+    color: colors.textMuted,
+  },
+  stateTitle: {
+    marginTop: spacing.md,
+    fontSize: fontSize.heading,
+    fontWeight: '700',
+    color: colors.text,
+    textAlign: 'center',
+  },
+  stateText: {
+    marginTop: spacing.sm,
+    fontSize: fontSize.body,
+    lineHeight: 22,
+    color: colors.textMuted,
+    textAlign: 'center',
+  },
+  button: {
+    marginTop: spacing.xl,
+    minHeight: 48,
+    borderRadius: radius.md,
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonPressed: {
+    backgroundColor: colors.primaryDark,
+  },
+  buttonText: {
+    color: colors.onPrimary,
+    fontSize: fontSize.body,
+    fontWeight: '700',
+  },
+  banner: {
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    backgroundColor: colors.errorBackground,
+    borderWidth: 1,
+    borderColor: colors.danger,
+    borderRadius: radius.sm,
+    padding: spacing.md,
+  },
+  bannerText: {
+    color: colors.danger,
+    fontSize: fontSize.small,
+  },
+});
