@@ -229,14 +229,13 @@ example. Re-run the checks in §2 and §5 after restoring them.
 
 ## 9. Automated checks and signed APK releases (CI)
 
-Issue #8 introduces two GitHub Actions automations:
+Issue #8 adds GitHub Actions automations:
 
-- **Checks on pull requests to `dev` or `main` and pushes to those branches.**
-  They run tests, a type check and an Android debug build without release secrets.
+- **Checks on pushes to `dev` or `main` only.** They run tests, a type check and
+  an Android debug build without release secrets.
 - **Signed APK on push to `main`.** A push to `main`, including a merge from
   `dev`, builds the release from `android/`, verifies it (§5), and uploads the
-  APK as a GitHub Actions artifact. Pull requests and pushes to `dev` do not
-  produce release APKs.
+  APK as a GitHub Actions artifact. Pushes to `dev` do not produce release APKs.
 
 **Secrets.** The keystore and passwords are never committed. In CI they live as
 encrypted GitHub Actions repository secrets. CI decodes the keystore into a

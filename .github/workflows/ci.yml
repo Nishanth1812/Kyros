@@ -1,11 +1,9 @@
-# Kyros CI — runs on pull requests to dev/main and pushes to dev/main.
+# Kyros CI — runs only on pushes to dev/main.
 # No repository secrets are needed; forks and untrusted PR code run with a
 # read-only token and are never given signing credentials.
 name: CI
 
 on:
-  pull_request:
-    branches: [dev, main]
   push:
     branches: [dev, main]
 
