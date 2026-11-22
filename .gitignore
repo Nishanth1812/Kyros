@@ -40,3 +40,5 @@ yarn-error.*
 
 # generated native folders
 /ios
+/CMakeFiles/
+/*_autolinked_build/

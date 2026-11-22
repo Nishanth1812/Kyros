@@ -1,12 +1,11 @@
-# Android Release Guidance — Kyros 0.1
+# Android Release Guidance — Kyros 0.2
 
-This document describes how to produce a **signed** release build of Kyros 0.1 and
+This document describes how to produce a **signed** release build of Kyros 0.2 and
 how to install and upgrade it. Kyros uses React Native and the Android Gradle
 wrapper in `android/`. GitHub Actions builds and verifies signed APKs on pushes
 to `main` (§9).
 
-Related: [README.md](README.md) (dev setup and product decisions),
-[release-0.1.md](release-0.1.md) (release goal and checks), [plan.md](plan.md).
+Related: [README.md](README.md) (development setup and product details).
 
 ## 0. How the project is actually built
 
@@ -98,9 +97,11 @@ Test-Path $env:KYROS_RELEASE_STORE_FILE   # must be True
 
 ## 3. Version every release
 
-CI increments the patch version and `versionCode` for each new release from
+CI computes the release version and `versionCode` for each new release from
 `main` (§9). To change the source version, update `package.json` and
-`android/app/build.gradle` together. Keep Android API 24 as the minimum.
+`android/app/build.gradle` together. Keep Android API 24 as the minimum. The
+0.2 source base is version `0.2.0` with base `versionCode` 4, above the latest
+published tag's annotated code (v0.1.2 / code 3). CI assigns code 5 to v0.2.0.
 
 ## 4. Build the release APK
 
@@ -169,20 +170,26 @@ Get-ChildItem Env:KYROS_RELEASE_* | Remove-Item
 - **Same key is mandatory.** PackageManager only applies an update when the new
   APK is signed with the same key as the installed one. Reuse the §1 keystore
   for every release.
-- **Upgrade test (per `release-0.1.md`):** install release 1, add income and
-  expense entries, then install a newer release signed with the same key;
-  reopen the app and confirm the SQLite entries are still present and ordered.
+- **Upgrade test:** install a 0.1.x release, add income and expense entries, then
+  install the 0.2.0 release signed with the same key; reopen the app and confirm
+  the SQLite entries are still present, ordered, and assigned to the matching
+  type's `Other` category by the v1-to-v2 migration (§7). Recategorize an entry,
+  add a custom category, edit and delete entries, and check filters and dashboard
+  totals against those same values.
 - **Debug vs release:** the debug key cannot overwrite a release-signed install
   (or vice versa). Test upgrades only with release-signed APKs.
 - **If the keystore is lost:** you cannot sign an APK that upgrades the existing
-  install. Recovery is uninstall/reinstall, which deletes the SQLite data in
-  0.1 — there is no backup/restore yet.
+  install. Recovery is uninstall/reinstall, which deletes the SQLite data in all
+  local releases so far — there is no backup/restore yet.
 
 ## 7. Database compatibility
 
-Android opens the existing `files/SQLite/kyros.sqlite` database in place. For
-the first upgrade after changing the native SQLite driver, include income and
-expense entries created by the previous app in the upgrade check (§6).
+Android opens the existing `files/SQLite/kyros.sqlite` database in place. Kyros
+0.2 migrates it from schema v1 to v2 in one transaction: it creates and seeds
+`categories`, adds a required `category_id` to transactions (mapping existing
+rows to the matching type's `Other`), and only then sets `user_version` to 2.
+If any step fails, the original table, rows, and version are left intact. Include
+income and expense entries created by the previous app in the upgrade check (§6).
 
 ## 8. Security summary
 
@@ -208,6 +215,10 @@ The single push-only GitHub Actions workflow handles checks and signed APK relea
   Actions artifact for 30 days. Pushes to `dev` do not produce release APKs.
 - **Release notes.** Add `release-notes/vX.Y.Z.md` before merging the release
   into `main`. If that file is absent, GitHub generates notes from the changes.
+- **Wiki.** For each main release, review the [wiki](https://github.com/Nishanth1812/Kyros/wiki)
+  against the released changes. Update affected usage, setup, data, and release
+  guidance as needed, then verify the published pages. Release notes do not
+  replace updating existing guidance.
 
 **Secrets.** The keystore and passwords are never committed. In CI they live as
 encrypted GitHub Actions repository secrets, exposed only to the `main` release
@@ -234,8 +245,10 @@ build if any is missing (§4). A debug build cannot upgrade a release install (�
 `android/app/build.gradle` must match. Gradle defines the base `versionCode`. After
 the signed APK passes alignment and certificate verification, CI creates an
 annotated `vX.Y.Z` tag on the `main` commit and records the APK's versionCode in
-the tag message. Each later main release increments the latest tagged patch and
-versionCode by one. The first release from 0.1.0/version code 1 is 0.1.1/code 2.
+the tag message. Each later release on the same minor line increments the latest
+tagged patch and versionCode by one. The first release of a new minor line uses
+that line's exact source version: advancing from the 0.1.x line to source `0.2.0`
+produces `v0.2.0` (not `0.2.1`); the earlier 0.1.0 source produced `v0.1.1`/code 2.
 Rerunning the same main commit reuses its tag and version. A failed build or
 signature check creates no tag, so it does not consume a version. The workflow
 does not change the repository's source version files. Keep release tags and the

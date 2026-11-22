@@ -7,6 +7,7 @@ import {
 } from '@react-navigation/native';
 
 import AddTransactionScreen from '../screens/AddTransactionScreen';
+import DashboardScreen from '../screens/DashboardScreen';
 import HistoryScreen from '../screens/HistoryScreen';
 import { colors } from '../theme/theme';
 import type { RootTabParamList } from './types';
@@ -26,6 +27,12 @@ const navigationTheme: Theme = {
   },
 };
 
+const tabIcons: Record<keyof RootTabParamList, string> = {
+  Dashboard: '▦',
+  Add: '＋',
+  History: '◷',
+};
+
 export default function AppNavigator() {
   return (
     <NavigationContainer theme={navigationTheme}>
@@ -41,12 +48,16 @@ export default function AppNavigator() {
             height: 62,
             paddingBottom: 6,
           },
-          tabBarIcon: ({ color, size, focused }) => {
-            const icon = route.name === 'Add' ? '＋' : '◷';
-            return <Text style={{ color, fontSize: size, fontWeight: focused ? '700' : '400' }}>{icon}</Text>;
-          },
+          tabBarIcon: ({ color, size, focused }) => (
+            <Text
+              style={{ color, fontSize: size, fontWeight: focused ? '700' : '400' }}
+            >
+              {tabIcons[route.name]}
+            </Text>
+          ),
         })}
       >
+        <Tab.Screen name="Dashboard" component={DashboardScreen} />
         <Tab.Screen name="Add" component={AddTransactionScreen} />
         <Tab.Screen name="History" component={HistoryScreen} />
       </Tab.Navigator>

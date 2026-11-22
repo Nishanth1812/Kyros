@@ -1,12 +1,23 @@
 import { Database } from 'bun:sqlite';
 import type { SQLiteDatabaseLike } from '../../src/storage/types';
 
+export interface BunSqliteAdapterOptions {
+  /**
+   * When set, throw this error after a transactional task has run but before
+   * COMMIT, so rollback behavior can be verified in tests.
+   */
+  failBeforeCommit?: Error;
+}
+
 /**
  * Adapts bun:sqlite's synchronous Database to the async SQLiteDatabaseLike
  * interface used by the storage layer.
  * Intended for Node/Bun test verification only.
  */
-export function createBunSqliteAdapter(filename: string = ':memory:'): {
+export function createBunSqliteAdapter(
+  filename: string = ':memory:',
+  options: BunSqliteAdapterOptions = {}
+): {
   db: SQLiteDatabaseLike;
   raw: Database;
   close: () => void;
@@ -44,6 +55,9 @@ export function createBunSqliteAdapter(filename: string = ':memory:'): {
       raw.exec('BEGIN;');
       try {
         await task();
+        if (options.failBeforeCommit) {
+          throw options.failBeforeCommit;
+        }
         raw.exec('COMMIT;');
       } catch (err) {
         try {

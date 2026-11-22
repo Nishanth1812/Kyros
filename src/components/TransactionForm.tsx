@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -12,13 +12,34 @@ import { todayISO } from '../lib/dates';
 import { parseAmountToMinorUnits, refreshAmountError } from '../lib/money';
 import {
   validateTransactionInput,
+  type Category,
+  type NewCategoryInput,
   type NewTransactionInput,
   type TransactionType,
   type ValidationField,
 } from '../storage';
 import { colors, elevation, fontSize, radius, spacing } from '../theme/theme';
+import CategoryPicker from './CategoryPicker';
 
 type FieldErrors = Partial<Record<ValidationField | 'form', string>>;
+
+/** Editable transaction fields; a full Transaction satisfies this shape. */
+export interface TransactionFormValues {
+  type: TransactionType;
+  amountMinor: number;
+  date: string;
+  description: string | null;
+  categoryId: number;
+}
+
+export interface TransactionFormProps {
+  categories: Category[];
+  onSubmit: (input: NewTransactionInput) => Promise<void>;
+  onCreateCategory: (input: NewCategoryInput) => Promise<Category>;
+  /** Omit to create; provide a transaction to edit its values in place. */
+  initialValues?: TransactionFormValues;
+  submitLabel?: string;
+}
 
 const OPTIONS: Array<{ value: TransactionType; label: string }> = [
   { value: 'expense', label: 'Expense' },
@@ -31,15 +52,35 @@ function toMessage(error: unknown): string {
     : 'Could not save the transaction. Please try again.';
 }
 
+/** Render integer minor units as the rupee text the amount field expects. */
+function amountMinorToInput(amountMinor: number): string {
+  const sign = amountMinor < 0 ? '-' : '';
+  const absolute = Math.abs(amountMinor);
+  const rupees = Math.floor(absolute / 100);
+  const paise = absolute % 100;
+  return `${sign}${rupees}.${String(paise).padStart(2, '0')}`;
+}
+
 export default function TransactionForm({
+  categories,
   onSubmit,
-}: {
-  onSubmit: (input: NewTransactionInput) => Promise<void>;
-}) {
-  const [type, setType] = useState<TransactionType>('expense');
-  const [amount, setAmount] = useState('');
-  const [date, setDate] = useState(todayISO);
-  const [description, setDescription] = useState('');
+  onCreateCategory,
+  initialValues,
+  submitLabel = 'Save transaction',
+}: TransactionFormProps) {
+  const [type, setType] = useState<TransactionType>(
+    () => initialValues?.type ?? 'expense'
+  );
+  const [amount, setAmount] = useState(() =>
+    initialValues ? amountMinorToInput(initialValues.amountMinor) : ''
+  );
+  const [date, setDate] = useState(() => initialValues?.date ?? todayISO());
+  const [description, setDescription] = useState(
+    () => initialValues?.description ?? ''
+  );
+  const [categoryId, setCategoryId] = useState<number | null>(
+    () => initialValues?.categoryId ?? null
+  );
   const [errors, setErrors] = useState<FieldErrors>({});
   const [submitting, setSubmitting] = useState(false);
   // Synchronous guard against double taps: React state updates are async, so
@@ -47,12 +88,58 @@ export default function TransactionForm({
   // before the re-render.
   const submittingRef = useRef(false);
 
+  // Re-seed the form when a caller swaps the transaction being edited. The
+  // signature keeps this stable for object literals that are recreated on
+  // every parent render.
+  const initialSignature = initialValues
+    ? `${initialValues.type}|${initialValues.amountMinor}|${initialValues.date}|${initialValues.description ?? ''}|${initialValues.categoryId}`
+    : '';
+  useEffect(() => {
+    setType(initialValues?.type ?? 'expense');
+    setAmount(initialValues ? amountMinorToInput(initialValues.amountMinor) : '');
+    setDate(initialValues?.date ?? todayISO());
+    setDescription(initialValues?.description ?? '');
+    setCategoryId(initialValues?.categoryId ?? null);
+    setErrors({});
+    submittingRef.current = false;
+    setSubmitting(false);
+    // initialValues is represented by initialSignature.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialSignature]);
+
+  const categoriesForType = categories.filter((category) => category.type === type);
+
+  // Categories can arrive after the form mounts, and switching type can leave
+  // the previous selection invalid. Keep exactly one valid default selected.
+  useEffect(() => {
+    if (categoryId !== null) return;
+    const first = categories.find((category) => category.type === type);
+    if (first) setCategoryId(first.id);
+  }, [categories, type, categoryId]);
+
   const handleAmountChange = (text: string) => {
     setAmount(text);
     // Keep the visible amount error in sync with the current text: clear it
     // once the value is valid, refresh it if the edit is still invalid, and
     // leave date/description/form errors alone.
     setErrors((prev) => refreshAmountError(prev, text));
+  };
+
+  const handleTypeChange = (next: TransactionType) => {
+    setType(next);
+    setCategoryId((current) => {
+      if (current === null) return null;
+      const stillValid = categories.some(
+        (category) => category.id === current && category.type === next
+      );
+      return stillValid ? current : null;
+    });
+    setErrors((prev) => {
+      if (!prev.categoryId) return prev;
+      const nextErrors = { ...prev };
+      delete nextErrors.categoryId;
+      return nextErrors;
+    });
   };
 
   const handleSubmit = async () => {
@@ -78,17 +165,25 @@ export default function TransactionForm({
       );
       if (amountIssue) nextErrors.amountMinor = amountIssue.message;
     }
+    if (categoryId === null) nextErrors.categoryId = 'Choose a category.';
     setErrors(nextErrors);
 
-    if (!validation.ok || !validation.value || !parsedAmount.ok) return;
+    if (!validation.ok || !validation.value || !parsedAmount.ok || categoryId === null) {
+      return;
+    }
 
     submittingRef.current = true;
     setSubmitting(true);
     try {
-      await onSubmit(validation.value);
-      setAmount('');
-      setDescription('');
-      setDate(todayISO());
+      await onSubmit({ ...validation.value, categoryId });
+      // Creating a new entry starts fresh; editing keeps the values on screen
+      // so a failed close or a retry never loses what the user typed.
+      if (!initialValues) {
+        setAmount('');
+        setDescription('');
+        setDate(todayISO());
+        setCategoryId(categoriesForType[0]?.id ?? null);
+      }
       setErrors({});
     } catch (error) {
       setErrors({ form: toMessage(error) });
@@ -107,10 +202,11 @@ export default function TransactionForm({
           return (
             <Pressable
               key={option.value}
-              onPress={() => setType(option.value)}
+              onPress={() => handleTypeChange(option.value)}
+              disabled={submitting}
               accessibilityRole="radio"
               accessibilityLabel={option.label}
-              accessibilityState={{ selected }}
+              accessibilityState={{ selected, disabled: submitting }}
               style={[
                 styles.segmentOption,
                 selected &&
@@ -180,6 +276,33 @@ export default function TransactionForm({
         <Text style={styles.helperText}>Format: YYYY-MM-DD</Text>
       )}
 
+      <Text style={[styles.label, styles.labelSpaced]}>Category</Text>
+      <CategoryPicker
+        categories={categoriesForType}
+        type={type}
+        selectedId={categoryId}
+        onSelect={(id) => {
+          setCategoryId(id);
+          setErrors((prev) => {
+            if (!prev.categoryId) return prev;
+            const nextErrors = { ...prev };
+            delete nextErrors.categoryId;
+            return nextErrors;
+          });
+        }}
+        onCreateCategory={onCreateCategory}
+        disabled={submitting}
+      />
+      {errors.categoryId ? (
+        <Text
+          style={styles.errorText}
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
+        >
+          {errors.categoryId}
+        </Text>
+      ) : null}
+
       <Text style={[styles.label, styles.labelSpaced]}>Description (optional)</Text>
       <TextInput
         value={description}
@@ -215,7 +338,7 @@ export default function TransactionForm({
         onPress={() => void handleSubmit()}
         disabled={submitting}
         accessibilityRole="button"
-        accessibilityLabel="Save transaction"
+        accessibilityLabel={submitLabel}
         accessibilityState={{ disabled: submitting }}
         style={({ pressed }) => [
           styles.submitButton,
@@ -226,7 +349,7 @@ export default function TransactionForm({
         {submitting ? (
           <ActivityIndicator color={colors.onPrimary} />
         ) : (
-          <Text style={styles.submitText}>Save transaction</Text>
+          <Text style={styles.submitText}>{submitLabel}</Text>
         )}
       </Pressable>
     </View>
