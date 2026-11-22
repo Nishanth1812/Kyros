@@ -1,6 +1,11 @@
 import { NativeModules } from 'react-native';
 
-import { createTransactionStorage, type TransactionStorage } from '../storage';
+import {
+  createCategoryStorage,
+  createTransactionStorage,
+  type CategoryStorage,
+  type TransactionStorage,
+} from '../storage';
 import type { SQLiteDatabaseLike, SQLiteValue } from '../storage/types';
 
 const DATABASE_NAME = 'kyros.sqlite';
@@ -36,15 +41,30 @@ class NativeSQLiteDatabase implements SQLiteDatabaseLike {
   }
 }
 
+let databasePromise: Promise<NativeSQLiteDatabase> | null = null;
+
+/** Open the single Android database connection shared by both storages. */
+function getDatabase(): Promise<NativeSQLiteDatabase> {
+  if (!databasePromise) {
+    databasePromise = (async () => {
+      const native = NativeModules.KyrosSQLite as NativeSQLiteModule;
+      await native.openDatabase(DATABASE_NAME);
+      return new NativeSQLiteDatabase(native);
+    })().catch((error: unknown) => {
+      databasePromise = null;
+      throw error;
+    });
+  }
+  return databasePromise;
+}
+
 let storagePromise: Promise<TransactionStorage> | null = null;
 
 /** Lazily opens the existing Android database and initializes its schema. */
 export function getTransactionStorage(): Promise<TransactionStorage> {
   if (!storagePromise) {
     storagePromise = (async () => {
-      const native = NativeModules.KyrosSQLite as NativeSQLiteModule;
-      await native.openDatabase(DATABASE_NAME);
-      const storage = createTransactionStorage(new NativeSQLiteDatabase(native));
+      const storage = createTransactionStorage(await getDatabase());
       await storage.initialize();
       return storage;
     })().catch((error: unknown) => {
@@ -53,4 +73,24 @@ export function getTransactionStorage(): Promise<TransactionStorage> {
     });
   }
   return storagePromise;
+}
+
+let categoryStoragePromise: Promise<CategoryStorage> | null = null;
+
+/** Lazily opens the same database and initializes its category schema. */
+export function getCategoryStorage(): Promise<CategoryStorage> {
+  if (!categoryStoragePromise) {
+    categoryStoragePromise = (async () => {
+      // Transaction storage owns schema setup. Await it first so the two
+      // storages never open competing migrations on a single connection.
+      await getTransactionStorage();
+      const storage = createCategoryStorage(await getDatabase());
+      await storage.initialize();
+      return storage;
+    })().catch((error: unknown) => {
+      categoryStoragePromise = null;
+      throw error;
+    });
+  }
+  return categoryStoragePromise;
 }

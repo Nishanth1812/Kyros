@@ -1,7 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 import {
+  CategoryValidationError,
   MAX_AMOUNT_MINOR_UNITS,
   TransactionValidationError,
+  assertValidCategoryInput,
+  validateCategoryInput,
   validateTransactionInput,
 } from '../src/storage';
 import { createTransactionStorage } from '../src/storage';
@@ -119,6 +122,13 @@ describe('validateTransactionInput', () => {
     }
   });
 
+  test('accepts valid calendar dates with years below 0100', () => {
+    for (const date of ['0000-02-29', '0099-12-31']) {
+      const result = validateTransactionInput({ type: 'income', amountMinor: 100, date });
+      expect(result.ok).toBe(true);
+    }
+  });
+
   test('storage refuses to save invalid amount and throws TransactionValidationError', async () => {
     const { db, close } = createBunSqliteAdapter(':memory:');
     const storage = createTransactionStorage(db);
@@ -132,5 +142,28 @@ describe('validateTransactionInput', () => {
     } finally {
       close();
     }
+  });
+});
+
+describe('validateCategoryInput', () => {
+  test('trims a name and rejects blank names', () => {
+    expect(validateCategoryInput({ type: 'expense', name: '  Groceries  ' }).value).toEqual({
+      type: 'expense',
+      name: 'Groceries',
+    });
+    expect(validateCategoryInput({ type: 'expense', name: '' }).ok).toBe(false);
+    expect(validateCategoryInput({ type: 'expense', name: '   ' }).ok).toBe(false);
+  });
+
+  test('rejects an invalid category type', () => {
+    const result = validateCategoryInput({ type: 'transfer' as any, name: 'X' });
+    expect(result.ok).toBe(false);
+    expect(result.errors[0]).toMatchObject({ field: 'type' });
+  });
+
+  test('assertValidCategoryInput throws CategoryValidationError on invalid input', () => {
+    expect(() => assertValidCategoryInput({ type: 'income', name: ' ' })).toThrow(
+      CategoryValidationError
+    );
   });
 });

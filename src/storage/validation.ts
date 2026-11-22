@@ -1,4 +1,8 @@
 import {
+  CategoryValidationError,
+  CategoryValidationErrorEntry,
+  CategoryValidationResult,
+  NewCategoryInput,
   NewTransactionInput,
   TransactionType,
   ValidatedNewTransaction,
@@ -22,7 +26,8 @@ function isValidCalendarDate(date: string): boolean {
   const month = Number(mStr);
   const day = Number(dStr);
   if (month < 1 || month > 12 || day < 1 || day > 31) return false;
-  const utc = new Date(Date.UTC(year, month - 1, day));
+  const utc = new Date(0);
+  utc.setUTCFullYear(year, month - 1, day);
   return (
     utc.getUTCFullYear() === year &&
     utc.getUTCMonth() === month - 1 &&
@@ -128,6 +133,66 @@ export function assertValidTransactionInput(
   const result = validateTransactionInput(input);
   if (!result.ok || !result.value) {
     throw new TransactionValidationError(result.errors);
+  }
+  return result.value;
+}
+
+/**
+ * Validate the raw category id supplied with a transaction write. Existence
+ * and type agreement are checked at the storage boundary because they require
+ * a database lookup; this helper only enforces the shape of the value.
+ */
+export function assertValidCategoryId(value: unknown): number {
+  if (!isInteger(value) || value <= 0) {
+    throw new TransactionValidationError([
+      {
+        field: 'categoryId',
+        message: 'Category is required and must be a positive integer.',
+      },
+    ]);
+  }
+  return value;
+}
+
+/** Validate and normalize a new category name (trimmed, non-blank). */
+export function validateCategoryInput(
+  input: NewCategoryInput
+): CategoryValidationResult {
+  const errors: CategoryValidationErrorEntry[] = [];
+
+  let type: TransactionType | undefined;
+  if (input?.type === 'income' || input?.type === 'expense') {
+    type = input.type;
+  } else {
+    errors.push({
+      field: 'type',
+      message: 'Type must be either "income" or "expense".',
+    });
+  }
+
+  let name: string | undefined;
+  if (typeof input?.name !== 'string') {
+    errors.push({ field: 'name', message: 'Name is required.' });
+  } else {
+    const trimmed = input.name.trim();
+    if (trimmed.length === 0) {
+      errors.push({ field: 'name', message: 'Name is required.' });
+    } else {
+      name = trimmed;
+    }
+  }
+
+  if (errors.length > 0 || !type || name === undefined) {
+    return { ok: false, errors };
+  }
+
+  return { ok: true, errors: [], value: { type, name } };
+}
+
+export function assertValidCategoryInput(input: NewCategoryInput): NewCategoryInput {
+  const result = validateCategoryInput(input);
+  if (!result.ok || !result.value) {
+    throw new CategoryValidationError(result.errors);
   }
   return result.value;
 }
