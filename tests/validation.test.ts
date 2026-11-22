@@ -1,7 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 import {
+  CategoryValidationError,
   MAX_AMOUNT_MINOR_UNITS,
   TransactionValidationError,
+  assertValidCategoryInput,
+  validateCategoryInput,
   validateTransactionInput,
 } from '../src/storage';
 import { createTransactionStorage } from '../src/storage';
@@ -132,5 +135,28 @@ describe('validateTransactionInput', () => {
     } finally {
       close();
     }
+  });
+});
+
+describe('validateCategoryInput', () => {
+  test('trims a name and rejects blank names', () => {
+    expect(validateCategoryInput({ type: 'expense', name: '  Groceries  ' }).value).toEqual({
+      type: 'expense',
+      name: 'Groceries',
+    });
+    expect(validateCategoryInput({ type: 'expense', name: '' }).ok).toBe(false);
+    expect(validateCategoryInput({ type: 'expense', name: '   ' }).ok).toBe(false);
+  });
+
+  test('rejects an invalid category type', () => {
+    const result = validateCategoryInput({ type: 'transfer' as any, name: 'X' });
+    expect(result.ok).toBe(false);
+    expect(result.errors[0]).toMatchObject({ field: 'type' });
+  });
+
+  test('assertValidCategoryInput throws CategoryValidationError on invalid input', () => {
+    expect(() => assertValidCategoryInput({ type: 'income', name: ' ' })).toThrow(
+      CategoryValidationError
+    );
   });
 });

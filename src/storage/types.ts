@@ -7,6 +7,35 @@ export interface Category {
   isBuiltin: boolean;
 }
 
+export interface NewCategoryInput {
+  type: TransactionType;
+  name: string;
+}
+
+export type CategoryValidationField = 'type' | 'name';
+
+export interface CategoryValidationErrorEntry {
+  field: CategoryValidationField;
+  message: string;
+}
+
+export interface CategoryValidationResult {
+  ok: boolean;
+  errors: CategoryValidationErrorEntry[];
+  value?: NewCategoryInput;
+}
+
+export class CategoryValidationError extends Error {
+  readonly errors: CategoryValidationErrorEntry[];
+
+  constructor(errors: CategoryValidationErrorEntry[]) {
+    const message = errors.map((e) => `${e.field}: ${e.message}`).join('; ');
+    super(message);
+    this.name = 'CategoryValidationError';
+    this.errors = errors;
+  }
+}
+
 /**
  * Amounts are stored and transferred as integer minor units (e.g. cents).
  * Floating-point values are never used for money.
@@ -89,4 +118,10 @@ export interface TransactionStorage {
   addTransaction(input: NewTransactionInput): Promise<Transaction>;
   listTransactions(): Promise<Transaction[]>;
   getTransactionById(id: number): Promise<Transaction | null>;
+}
+
+export interface CategoryStorage {
+  initialize(): Promise<void>;
+  listCategories(type?: TransactionType): Promise<Category[]>;
+  createCategory(input: NewCategoryInput): Promise<Category>;
 }

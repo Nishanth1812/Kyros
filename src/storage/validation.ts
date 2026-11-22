@@ -1,4 +1,8 @@
 import {
+  CategoryValidationError,
+  CategoryValidationErrorEntry,
+  CategoryValidationResult,
+  NewCategoryInput,
   NewTransactionInput,
   TransactionType,
   ValidatedNewTransaction,
@@ -128,6 +132,49 @@ export function assertValidTransactionInput(
   const result = validateTransactionInput(input);
   if (!result.ok || !result.value) {
     throw new TransactionValidationError(result.errors);
+  }
+  return result.value;
+}
+
+/** Validate and normalize a new category name (trimmed, non-blank). */
+export function validateCategoryInput(
+  input: NewCategoryInput
+): CategoryValidationResult {
+  const errors: CategoryValidationErrorEntry[] = [];
+
+  let type: TransactionType | undefined;
+  if (input?.type === 'income' || input?.type === 'expense') {
+    type = input.type;
+  } else {
+    errors.push({
+      field: 'type',
+      message: 'Type must be either "income" or "expense".',
+    });
+  }
+
+  let name: string | undefined;
+  if (typeof input?.name !== 'string') {
+    errors.push({ field: 'name', message: 'Name is required.' });
+  } else {
+    const trimmed = input.name.trim();
+    if (trimmed.length === 0) {
+      errors.push({ field: 'name', message: 'Name is required.' });
+    } else {
+      name = trimmed;
+    }
+  }
+
+  if (errors.length > 0 || !type || name === undefined) {
+    return { ok: false, errors };
+  }
+
+  return { ok: true, errors: [], value: { type, name } };
+}
+
+export function assertValidCategoryInput(input: NewCategoryInput): NewCategoryInput {
+  const result = validateCategoryInput(input);
+  if (!result.ok || !result.value) {
+    throw new CategoryValidationError(result.errors);
   }
   return result.value;
 }
