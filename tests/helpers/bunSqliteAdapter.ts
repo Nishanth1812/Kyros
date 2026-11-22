@@ -3,7 +3,7 @@ import type { SQLiteDatabaseLike } from '../../src/storage/types';
 
 /**
  * Adapts bun:sqlite's synchronous Database to the async SQLiteDatabaseLike
- * interface used by the storage layer (compatible with expo-sqlite subset).
+ * interface used by the storage layer.
  * Intended for Node/Bun test verification only.
  */
 export function createBunSqliteAdapter(filename: string = ':memory:'): {

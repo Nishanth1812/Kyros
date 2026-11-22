@@ -1,5 +1,5 @@
-import { MaterialIcons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Text } from 'react-native';
 import {
   DefaultTheme,
   NavigationContainer,
@@ -42,13 +42,8 @@ export default function AppNavigator() {
             paddingBottom: 6,
           },
           tabBarIcon: ({ color, size, focused }) => {
-            const iconName =
-              route.name === 'Add'
-                ? focused
-                  ? 'add-circle'
-                  : 'add-circle-outline'
-                : 'history';
-            return <MaterialIcons name={iconName} size={size} color={color} />;
+            const icon = route.name === 'Add' ? '＋' : '◷';
+            return <Text style={{ color, fontSize: size, fontWeight: focused ? '700' : '400' }}>{icon}</Text>;
           },
         })}
       >
