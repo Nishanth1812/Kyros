@@ -7,6 +7,7 @@ export {
 } from './validation';
 export { TransactionValidationError } from './types';
 export type {
+  Category,
   Transaction,
   TransactionType,
   MinorUnits,

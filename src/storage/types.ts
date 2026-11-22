@@ -1,5 +1,12 @@
 export type TransactionType = 'income' | 'expense';
 
+export interface Category {
+  id: number;
+  type: TransactionType;
+  name: string;
+  isBuiltin: boolean;
+}
+
 /**
  * Amounts are stored and transferred as integer minor units (e.g. cents).
  * Floating-point values are never used for money.
