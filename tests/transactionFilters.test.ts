@@ -13,6 +13,12 @@ function makeTransaction(
 }
 
 describe('filterTransactions', () => {
+  test('accepts ISO calendar dates with years below 0100', () => {
+    expect(
+      filterTransactions([], { dateFrom: '0000-02-29', dateTo: '0099-12-31' })
+    ).toEqual([]);
+  });
+
   test('test_transaction_filters_combine_and_include_date_bounds', () => {
     const transactions: Transaction[] = [
       makeTransaction({ id: 1, type: 'income', amountMinor: 50000, date: '2026-01-01', categoryId: 9 }),

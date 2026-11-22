@@ -15,7 +15,8 @@ function isValidCalendarDate(value: string): boolean {
   if (!ISO_DATE_RE.test(value)) return false;
   const [year, month, day] = value.split('-').map(Number);
   if (month < 1 || month > 12 || day < 1 || day > 31) return false;
-  const utc = new Date(Date.UTC(year, month - 1, day));
+  const utc = new Date(0);
+  utc.setUTCFullYear(year, month - 1, day);
   return (
     utc.getUTCFullYear() === year &&
     utc.getUTCMonth() === month - 1 &&
