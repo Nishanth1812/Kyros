@@ -136,6 +136,23 @@ export function assertValidTransactionInput(
   return result.value;
 }
 
+/**
+ * Validate the raw category id supplied with a transaction write. Existence
+ * and type agreement are checked at the storage boundary because they require
+ * a database lookup; this helper only enforces the shape of the value.
+ */
+export function assertValidCategoryId(value: unknown): number {
+  if (!isInteger(value) || value <= 0) {
+    throw new TransactionValidationError([
+      {
+        field: 'categoryId',
+        message: 'Category is required and must be a positive integer.',
+      },
+    ]);
+  }
+  return value;
+}
+
 /** Validate and normalize a new category name (trimmed, non-blank). */
 export function validateCategoryInput(
   input: NewCategoryInput

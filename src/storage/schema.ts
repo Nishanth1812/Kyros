@@ -100,8 +100,11 @@ async function migrateV1ToV2(db: SQLiteDatabaseLike): Promise<void> {
  * Uses PRAGMA user_version for idempotent, upgrade-safe initialization.
  */
 export async function initializeSchema(db: SQLiteDatabaseLike): Promise<void> {
+  // PRAGMA foreign_keys is a no-op inside a transaction, so it must be set on
+  // the connection before BEGIN (and again on every new connection).
+  await db.execAsync('PRAGMA foreign_keys = ON;');
+
   const migrate = async () => {
-    await db.execAsync('PRAGMA foreign_keys = ON;');
     const row = await db.getFirstAsync<{ user_version: number }>(
       'PRAGMA user_version;'
     );

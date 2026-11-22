@@ -4,6 +4,7 @@ export { initializeSchema, SCHEMA_VERSION } from './schema';
 export {
   validateTransactionInput,
   assertValidTransactionInput,
+  assertValidCategoryId,
   MAX_AMOUNT_MINOR_UNITS,
   validateCategoryInput,
   assertValidCategoryInput,
