@@ -90,7 +90,7 @@ class KyrosSQLiteModule(context: ReactApplicationContext) : ReactContextBaseJava
       },
       source,
       emptyArray(),
-      null
+      ""
     )
 
   private fun bind(statement: SQLiteProgram, params: ReadableArray) {
