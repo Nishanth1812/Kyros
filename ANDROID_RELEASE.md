@@ -206,6 +206,8 @@ The single push-only GitHub Actions workflow handles checks and signed APK relea
   `dev`, builds the release from `android/`, verifies it (§5), and publishes a
   versioned APK on GitHub Releases. The same APK is also available as a GitHub
   Actions artifact for 30 days. Pushes to `dev` do not produce release APKs.
+- **Release notes.** Add `release-notes/vX.Y.Z.md` before merging the release
+  into `main`. If that file is absent, GitHub generates notes from the changes.
 
 **Secrets.** The keystore and passwords are never committed. In CI they live as
 encrypted GitHub Actions repository secrets, exposed only to the `main` release

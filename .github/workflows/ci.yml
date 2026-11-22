@@ -356,7 +356,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_VERSION: ${{ steps.version.outputs.version }}
-          RELEASE_CODE: ${{ steps.version.outputs.version_code }}
         run: |
           set -euo pipefail
           tag="v$RELEASE_VERSION"
@@ -372,9 +371,14 @@ jobs:
               gh release edit "$tag" --draft=false
             fi
           else
+            notes_file="release-notes/$tag.md"
+            notes_args=(--generate-notes)
+            if [ -f "$notes_file" ]; then
+              notes_args=(--notes-file "$notes_file")
+            fi
             gh release create "$tag" "$apk" --verify-tag \
               --title "Kyros $RELEASE_VERSION" \
-              --notes "Signed Android APK (versionCode $RELEASE_CODE)."
+              "${notes_args[@]}"
           fi
 
       - name: Remove temporary keystore
