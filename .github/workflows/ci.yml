@@ -195,9 +195,13 @@ jobs:
               IFS=. read -r latest_major latest_minor latest_patch <<< "$latest_version"
               if [ "$major.$minor" = "$latest_major.$latest_minor" ]; then
                 release_patch=$((10#$latest_patch + 1))
-              elif [ "$(printf '%s\n' "$base_version" "$latest_version" | sort -V | tail -n 1)" != "$base_version" ]; then
+              elif [ "$(printf '%s\n' "$major.$minor" "$latest_major.$latest_minor" | sort -V | tail -n 1)" != "$major.$minor" ]; then
                 echo "::error::Source version $base_version is behind the latest release tag $latest_tag."
                 exit 1
+              else
+                # Source moves to a new minor line: its first release is the source
+                # version itself, so 0.2.0 after 0.1.x releases as 0.2.0, not 0.2.1.
+                release_patch=$((10#$patch))
               fi
             fi
             release_version="$major.$minor.$release_patch"
