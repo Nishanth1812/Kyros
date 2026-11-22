@@ -203,8 +203,9 @@ The single push-only GitHub Actions workflow handles checks and signed APK relea
   pre-release feature testing. On `main`, it instead builds a signed release
   APK with all four configured Android ABIs after the quality checks pass.
 - **Signed APK on push to `main`.** A push to `main`, including a merge from
-  `dev`, builds the release from `android/`, verifies it (§5), and uploads the
-  APK as a GitHub Actions artifact. Pushes to `dev` do not produce release APKs.
+  `dev`, builds the release from `android/`, verifies it (§5), and publishes a
+  versioned APK on GitHub Releases. The same APK is also available as a GitHub
+  Actions artifact for 30 days. Pushes to `dev` do not produce release APKs.
 
 **Secrets.** The keystore and passwords are never committed. In CI they live as
 encrypted GitHub Actions repository secrets, exposed only to the `main` release
