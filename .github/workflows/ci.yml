@@ -81,16 +81,16 @@ jobs:
       - name: Install dependencies from lockfile
         run: npm ci
 
-      - name: Set up JDK 21 (Gradle dependency and wrapper caches)
+      - name: Set up JDK 21
         uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         with:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
-          cache: gradle
-          cache-dependency-path: |
-            android/**/*.gradle*
-            android/gradle.properties
-            android/gradle/wrapper/gradle-wrapper.properties
+
+      - name: Restore Gradle dependencies and task outputs
+        uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5.0.2
+        with:
+          cache-read-only: false
 
       - name: Configure Android SDK location
         run: echo "ANDROID_SDK_ROOT=$RUNNER_TEMP/android-sdk" >> "$GITHUB_ENV"
@@ -112,7 +112,10 @@ jobs:
         working-directory: android
         # gradlew is committed without the executable bit; invoke it via bash.
         # Keep the pre-release APK compatible with the x86_64 emulator and arm64 phones.
-        run: bash ./gradlew --no-daemon -PreactNativeArchitectures=arm64-v8a,x86_64 :app:assembleDebug
+        run: >-
+          bash ./gradlew --no-daemon --build-cache
+          -Porg.gradle.java.installations.fromEnv=JAVA_HOME_17_X64
+          -PreactNativeArchitectures=arm64-v8a,x86_64 :app:assembleDebug
 
       - name: Upload debug APK for pre-release testing
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -132,6 +135,21 @@ jobs:
     env:
       APK_PATH: android/app/build/outputs/apk/release/app-release.apk
     steps:
+      - name: Validate signing secrets are present
+        env:
+          KYROS_RELEASE_KEYSTORE_BASE64: ${{ secrets.KYROS_RELEASE_KEYSTORE_BASE64 }}
+          KYROS_RELEASE_STORE_PASSWORD: ${{ secrets.KYROS_RELEASE_STORE_PASSWORD }}
+          KYROS_RELEASE_KEY_ALIAS: ${{ secrets.KYROS_RELEASE_KEY_ALIAS }}
+          KYROS_RELEASE_KEY_PASSWORD: ${{ secrets.KYROS_RELEASE_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for name in KYROS_RELEASE_KEYSTORE_BASE64 KYROS_RELEASE_STORE_PASSWORD KYROS_RELEASE_KEY_ALIAS KYROS_RELEASE_KEY_PASSWORD; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::Missing required repository secret: $name."
+              exit 1
+            fi
+          done
+
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -141,22 +159,16 @@ jobs:
         id: version
         run: |
           set -euo pipefail
-          pkg_version=$(node -p "require('./package.json').version")
-          app_version=$(node -p "require('./app.json').expo.version")
-          app_version_code=$(node -p "require('./app.json').expo.android.versionCode")
+          base_version=$(node -p "require('./package.json').version")
           gradle_version=$(sed -n 's/^[[:space:]]*versionName "\([^"]*\)".*/\1/p' android/app/build.gradle | head -n 1)
           version_code=$(sed -n 's/^[[:space:]]*versionCode \([0-9][0-9]*\).*/\1/p' android/app/build.gradle | head -n 1)
-          if ! printf '%s' "$app_version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || \
-             [ "$pkg_version" != "$app_version" ] || [ "$gradle_version" != "$app_version" ]; then
-            echo "::error::Base versions in package.json, app.json and build.gradle must match and use X.Y.Z."
+          if ! printf '%s' "$base_version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || \
+             [ "$gradle_version" != "$base_version" ]; then
+            echo "::error::Base versions in package.json and build.gradle must match and use X.Y.Z."
             exit 1
           fi
           if [ -z "$version_code" ] || [ "$version_code" -lt 1 ]; then
             echo "::error::versionCode must be a positive integer."
-            exit 1
-          fi
-          if [ "$app_version_code" != "$version_code" ]; then
-            echo "::error::app.json versionCode does not match android/app/build.gradle."
             exit 1
           fi
           git fetch origin --tags --force
@@ -176,15 +188,15 @@ jobs:
               exit 1
             fi
           else
-            IFS=. read -r major minor patch <<< "$app_version"
+            IFS=. read -r major minor patch <<< "$base_version"
             release_patch=$((10#$patch + 1))
             if [ -n "$latest_tag" ]; then
               latest_version="${latest_tag#v}"
               IFS=. read -r latest_major latest_minor latest_patch <<< "$latest_version"
               if [ "$major.$minor" = "$latest_major.$latest_minor" ]; then
                 release_patch=$((10#$latest_patch + 1))
-              elif [ "$(printf '%s\n' "$app_version" "$latest_version" | sort -V | tail -n 1)" != "$app_version" ]; then
-                echo "::error::Source version $app_version is behind the latest release tag $latest_tag."
+              elif [ "$(printf '%s\n' "$base_version" "$latest_version" | sort -V | tail -n 1)" != "$base_version" ]; then
+                echo "::error::Source version $base_version is behind the latest release tag $latest_tag."
                 exit 1
               fi
             fi
@@ -207,13 +219,6 @@ jobs:
             exit 1
           fi
           sed -i -E "s/^([[:space:]]*versionName )\"[^\"]*\"/\1\"$release_version\"/; s/^([[:space:]]*versionCode )[0-9]+/\1$release_code/" android/app/build.gradle
-          RELEASE_VERSION="$release_version" RELEASE_CODE="$release_code" node -e '
-            const fs = require("fs");
-            const app = JSON.parse(fs.readFileSync("app.json", "utf8"));
-            app.expo.version = process.env.RELEASE_VERSION;
-            app.expo.android.versionCode = Number(process.env.RELEASE_CODE);
-            fs.writeFileSync("app.json", JSON.stringify(app, null, 2) + "\n");
-          '
           echo "version=$release_version" >> "$GITHUB_OUTPUT"
           echo "version_code=$release_code" >> "$GITHUB_OUTPUT"
           echo "Release version: $release_version (versionCode $release_code)"
@@ -228,16 +233,16 @@ jobs:
       - name: Install dependencies from lockfile
         run: npm ci
 
-      - name: Set up JDK 21 (Gradle dependency and wrapper caches)
+      - name: Set up JDK 21
         uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         with:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
-          cache: gradle
-          cache-dependency-path: |
-            android/**/*.gradle*
-            android/gradle.properties
-            android/gradle/wrapper/gradle-wrapper.properties
+
+      - name: Restore Gradle dependencies and task outputs
+        uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5.0.2
+        with:
+          cache-read-only: false
 
       - name: Configure Android SDK and keystore paths
         run: |
@@ -256,22 +261,6 @@ jobs:
           cmdline-tools-version: ${{ env.ANDROID_CMD_LINE_TOOLS }}
           packages: ${{ env.ANDROID_SDK_PACKAGES }}
           log-accepted-android-sdk-licenses: false
-
-      # Fail fast, and never echo a secret value. Only variable names are logged.
-      - name: Validate signing secrets are present
-        env:
-          KYROS_RELEASE_KEYSTORE_BASE64: ${{ secrets.KYROS_RELEASE_KEYSTORE_BASE64 }}
-          KYROS_RELEASE_STORE_PASSWORD: ${{ secrets.KYROS_RELEASE_STORE_PASSWORD }}
-          KYROS_RELEASE_KEY_ALIAS: ${{ secrets.KYROS_RELEASE_KEY_ALIAS }}
-          KYROS_RELEASE_KEY_PASSWORD: ${{ secrets.KYROS_RELEASE_KEY_PASSWORD }}
-        run: |
-          set -euo pipefail
-          for name in KYROS_RELEASE_KEYSTORE_BASE64 KYROS_RELEASE_STORE_PASSWORD KYROS_RELEASE_KEY_ALIAS KYROS_RELEASE_KEY_PASSWORD; do
-            if [ -z "${!name:-}" ]; then
-              echo "::error::Missing required repository secret: $name."
-              exit 1
-            fi
-          done
 
       - name: Decode release keystore outside the workspace
         env:
@@ -293,7 +282,9 @@ jobs:
           KYROS_RELEASE_KEY_ALIAS: ${{ secrets.KYROS_RELEASE_KEY_ALIAS }}
           KYROS_RELEASE_KEY_PASSWORD: ${{ secrets.KYROS_RELEASE_KEY_PASSWORD }}
         working-directory: android
-        run: bash ./gradlew --no-daemon :app:assembleRelease
+        run: >-
+          bash ./gradlew --no-daemon --build-cache
+          -Porg.gradle.java.installations.fromEnv=JAVA_HOME_17_X64 :app:assembleRelease
 
       - name: Verify signed APK
         env:

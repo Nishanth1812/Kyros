@@ -61,17 +61,24 @@ export interface ListTransactionsOptions {
 }
 
 /**
- * Minimal async SQLite interface compatible with expo-sqlite's SQLiteDatabase.
- * Keeping this narrow makes the storage layer testable outside React Native.
+ * Minimal async SQLite interface used by the storage layer.
  */
+export type SQLiteValue = string | number | boolean | null;
+
 export interface SQLiteDatabaseLike {
   execAsync(source: string): Promise<void>;
   runAsync(
     source: string,
-    ...params: any[]
+    ...params: SQLiteValue[]
   ): Promise<{ lastInsertRowId: number; changes: number }>;
-  getAllAsync<T = any>(source: string, ...params: any[]): Promise<T[]>;
-  getFirstAsync<T = any>(source: string, ...params: any[]): Promise<T | null>;
+  getAllAsync<T = Record<string, unknown>>(
+    source: string,
+    ...params: SQLiteValue[]
+  ): Promise<T[]>;
+  getFirstAsync<T = Record<string, unknown>>(
+    source: string,
+    ...params: SQLiteValue[]
+  ): Promise<T | null>;
   withTransactionAsync?(task: () => Promise<void>): Promise<void>;
 }
 
