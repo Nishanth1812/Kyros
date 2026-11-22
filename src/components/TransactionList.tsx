@@ -8,16 +8,22 @@ export default function TransactionList({
   transactions,
   refreshing,
   onRefresh,
+  onEdit,
+  onDelete,
 }: {
   transactions: Transaction[];
   refreshing: boolean;
   onRefresh: () => void;
+  onEdit: (transaction: Transaction) => void;
+  onDelete: (transaction: Transaction) => void;
 }) {
   return (
     <FlatList
       data={transactions}
       keyExtractor={(item) => String(item.id)}
-      renderItem={({ item }) => <TransactionRow transaction={item} />}
+      renderItem={({ item }) => (
+        <TransactionRow transaction={item} onEdit={onEdit} onDelete={onDelete} />
+      )}
       ItemSeparatorComponent={() => <View style={styles.separator} />}
       contentContainerStyle={styles.content}
       refreshControl={
