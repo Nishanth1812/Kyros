@@ -55,11 +55,6 @@ export class TransactionValidationError extends Error {
   }
 }
 
-export interface ListTransactionsOptions {
-  /** Defaults to 'date_desc' (newest first), with createdAt/id as tiebreakers. */
-  order?: 'date_desc';
-}
-
 /**
  * Minimal async SQLite interface used by the storage layer.
  */
@@ -85,6 +80,6 @@ export interface SQLiteDatabaseLike {
 export interface TransactionStorage {
   initialize(): Promise<void>;
   addTransaction(input: NewTransactionInput): Promise<Transaction>;
-  listTransactions(options?: ListTransactionsOptions): Promise<Transaction[]>;
+  listTransactions(): Promise<Transaction[]>;
   getTransactionById(id: number): Promise<Transaction | null>;
 }

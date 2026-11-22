@@ -1,6 +1,5 @@
 import { initializeSchema } from './schema';
 import {
-  ListTransactionsOptions,
   NewTransactionInput,
   SQLiteDatabaseLike,
   Transaction,
@@ -75,9 +74,7 @@ export function createTransactionStorage(db: SQLiteDatabaseLike): TransactionSto
       return { id: result.lastInsertRowId, type, amountMinor, date, description, createdAt };
     },
 
-    async listTransactions(
-      _options: ListTransactionsOptions = {}
-    ): Promise<Transaction[]> {
+    async listTransactions(): Promise<Transaction[]> {
       await ensureInitialized();
       const rows = await db.getAllAsync<TransactionRow>(
         `SELECT id, type, amount_minor, date, description, created_at
