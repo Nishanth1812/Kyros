@@ -15,7 +15,6 @@ export type {
   ValidationField,
   ValidationError,
   ValidationResult,
-  ListTransactionsOptions,
   SQLiteDatabaseLike,
   TransactionStorage,
 } from './types';

@@ -1,4 +1,3 @@
-import { MaterialIcons } from '@expo/vector-icons';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, fontSize, radius, spacing } from '../theme/theme';
@@ -21,7 +20,7 @@ export function ErrorView({
 }) {
   return (
     <View style={styles.centered}>
-      <MaterialIcons name="error-outline" size={48} color={colors.expense} />
+      <Text style={[styles.stateIcon, { fontSize: 48, color: colors.expense }]}>ⓘ</Text>
       <Text style={styles.stateTitle} accessibilityRole="header">
         Couldn’t load transactions
       </Text>
@@ -49,7 +48,7 @@ export function ErrorBanner({ message }: { message: string }) {
 export function EmptyState({ onAdd }: { onAdd: () => void }) {
   return (
     <View style={styles.centered}>
-      <MaterialIcons name="receipt-long" size={56} color={colors.primary} />
+      <Text style={[styles.stateIcon, { fontSize: 56, color: colors.primary }]}>▤</Text>
       <Text style={styles.stateTitle} accessibilityRole="header">
         No transactions yet
       </Text>
@@ -70,6 +69,9 @@ export function EmptyState({ onAdd }: { onAdd: () => void }) {
 }
 
 const styles = StyleSheet.create({
+  stateIcon: {
+    textAlign: 'center',
+  },
   centered: {
     flex: 1,
     alignItems: 'center',

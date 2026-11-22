@@ -55,29 +55,31 @@ export class TransactionValidationError extends Error {
   }
 }
 
-export interface ListTransactionsOptions {
-  /** Defaults to 'date_desc' (newest first), with createdAt/id as tiebreakers. */
-  order?: 'date_desc';
-}
-
 /**
- * Minimal async SQLite interface compatible with expo-sqlite's SQLiteDatabase.
- * Keeping this narrow makes the storage layer testable outside React Native.
+ * Minimal async SQLite interface used by the storage layer.
  */
+export type SQLiteValue = string | number | boolean | null;
+
 export interface SQLiteDatabaseLike {
   execAsync(source: string): Promise<void>;
   runAsync(
     source: string,
-    ...params: any[]
+    ...params: SQLiteValue[]
   ): Promise<{ lastInsertRowId: number; changes: number }>;
-  getAllAsync<T = any>(source: string, ...params: any[]): Promise<T[]>;
-  getFirstAsync<T = any>(source: string, ...params: any[]): Promise<T | null>;
+  getAllAsync<T = Record<string, unknown>>(
+    source: string,
+    ...params: SQLiteValue[]
+  ): Promise<T[]>;
+  getFirstAsync<T = Record<string, unknown>>(
+    source: string,
+    ...params: SQLiteValue[]
+  ): Promise<T | null>;
   withTransactionAsync?(task: () => Promise<void>): Promise<void>;
 }
 
 export interface TransactionStorage {
   initialize(): Promise<void>;
   addTransaction(input: NewTransactionInput): Promise<Transaction>;
-  listTransactions(options?: ListTransactionsOptions): Promise<Transaction[]>;
+  listTransactions(): Promise<Transaction[]>;
   getTransactionById(id: number): Promise<Transaction | null>;
 }

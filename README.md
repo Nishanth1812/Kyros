@@ -7,30 +7,32 @@ first. No account, network, or backend is required.
 ## Development
 
 Requirements: Node.js 22.13+ (Node 24 works), npm, Bun for tests, and an Android
-SDK/device or emulator for a native run. Java 21 is needed for release builds.
+SDK/device or emulator for a native run. CI runs Gradle on JDK 21 and uses the
+JDK 17 toolchain selected by React Native for compilation.
 
 ```bash
 npm install
-npm run start          # Expo dev server
+npm run start          # React Native Metro server
 npm run android        # build and launch the native Android app
 npm run typecheck      # tsc --noEmit
 npm test               # bun test tests
 ```
 
-The native Android project lives in `android/`. Prebuilding again can overwrite
-native changes, including release signing. Release builds require an external
-keystore and credentials; see [ANDROID_RELEASE.md](ANDROID_RELEASE.md).
+The React Native Android project lives in `android/`. Release builds require an
+external keystore and credentials; see [ANDROID_RELEASE.md](ANDROID_RELEASE.md).
 
 ## Automated checks and releases
 
 GitHub Actions uses one push-only workflow on `dev` and `main`. Tests and the
 TypeScript check run once per push. An Android debug build runs on `dev`; pushes
 to `main`, including merges from `dev`, instead build, verify, and upload a
-signed release APK artifact. The debug APK is uploaded from `dev` for pre-release
+signed APK on GitHub Releases. The debug APK is uploaded from `dev` for pre-release
 feature testing and includes arm64 devices plus x86_64 emulators. Signed
 releases retain all four configured ABIs. The release keystore and its
 passwords are held as encrypted GitHub Actions repository secrets, available
 only to the release job.
+Both Android jobs cache Gradle dependencies and reusable task outputs across
+runs.
 The workflow decodes the keystore into a temporary file and supplies passwords
 through environment variables. Back up the keystore outside GitHub so future
 upgrades stay signed with the same key. Debug builds use the standard template
@@ -51,7 +53,7 @@ src/
   screens/       AddTransactionScreen and HistoryScreen
   theme/         shared colours, spacing, radius and typography
 App.tsx            providers and root navigator
-index.ts           Expo root component registration
+index.ts           React Native root component registration
 ```
 
 ## Product decisions
@@ -61,8 +63,8 @@ index.ts           Expo root component registration
   rupees with up to two decimals and converts them to paise before any write, so
   no floating-point money ever reaches SQLite. There is no currency conversion;
   widening this to multiple currencies is a later release decision.
-- **Android range:** minimum Android 7.0 (API 24), the Expo SDK 58 / React Native
-  default floor, with portrait layout. Package `com.kyros.app`, `versionCode` 1,
+- **Android range:** minimum Android 7.0 (API 24), with portrait layout.
+  Package `com.kyros.app`, base `versionCode` 1,
   `versionName` 0.1.0.
 - **Ordering:** the storage layer sorts by date, then creation time, then id,
   all descending, so the newest entry is always first.

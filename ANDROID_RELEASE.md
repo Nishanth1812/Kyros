@@ -1,30 +1,18 @@
 # Android Release Guidance — Kyros 0.1
 
 This document describes how to produce a **signed** release build of Kyros 0.1 and
-how to install and upgrade it. It is written for the repository's **actual**
-workflow: an Expo SDK 58 app whose native Android project lives in `android/` and
-is built with the Android Gradle wrapper from that folder. Automated checks and
-the signed-APK release workflow are covered in §9.
-
-**Scope of this work:** the Gradle configuration below was changed so release
-builds no longer use the debug key. **No APK has been built or verified here.**
-An APK exists only after you run a successful build on a machine that has the
-Android SDK and the external release keystore. Do not assume any artifact path
-listed below is populated until you have produced it yourself.
+how to install and upgrade it. Kyros uses React Native and the Android Gradle
+wrapper in `android/`. GitHub Actions builds and verifies signed APKs on pushes
+to `main` (§9).
 
 Related: [README.md](README.md) (dev setup and product decisions),
 [release-0.1.md](release-0.1.md) (release goal and checks), [plan.md](plan.md).
 
 ## 0. How the project is actually built
 
-- `app.json` is the source of truth for `expo.version`, `expo.android.versionCode`
-  and `expo.android.package` (`com.kyros.app`).
-- `npx expo prebuild --platform android` generates/refreshes `android/` from
-  `app.json` plus the configured Expo plugins. It **overwrites template-managed
-  native files, including `android/app/build.gradle`** — so it also overwrites
-  the release signing configuration described here. Re-apply it after any
-  prebuild (see §7), or avoid re-prebuilding once signing is in place.
-- `npm run android` is `expo run:android`. It builds a **debug** variant, signed
+- `android/app/build.gradle` defines the package (`com.kyros.app`), base Android
+  version, and signing configuration.
+- `npm run android` uses the React Native CLI. It builds a **debug** variant, signed
   with the standard template key in `android/app/debug.keystore` (alias
   `androiddebugkey`, passwords `android`). That key is unchanged and continues
   to work; it is never used for release builds.
@@ -34,9 +22,6 @@ Related: [README.md](README.md) (dev setup and product decisions),
   cd android
   .\gradlew.bat :app:assembleRelease
   ```
-
-There is no Gradle wrapper at the repository root, and Expo EAS is not used in
-this project.
 
 ## 1. Signing key (once, before any release build)
 
@@ -88,8 +73,8 @@ property wins.
 | `KYROS_RELEASE_KEY_ALIAS` | Key alias, e.g. `kyros`. |
 | `KYROS_RELEASE_KEY_PASSWORD` | Key password. |
 
-**Never** put these in `android/gradle.properties`, `app.json`, or any committed
-file. Prefer environment variables for the passwords so they are not stored in
+**Never** put these in `android/gradle.properties` or any committed file.
+Prefer environment variables for the passwords so they are not stored in
 shell history or a properties file:
 
 ```powershell
@@ -113,12 +98,9 @@ Test-Path $env:KYROS_RELEASE_STORE_FILE   # must be True
 
 ## 3. Version every release
 
-1. In `app.json`, set `expo.version` (e.g. `0.1.1`) and increment
-   `expo.android.versionCode` (integer, +1 each release).
-2. Run `npx expo prebuild --platform android` so those values reach
-   `android/app/build.gradle` (`versionCode` / `versionName`).
-3. Re-apply the release signing configuration after the prebuild (§7).
-4. Keep the supported Android range constant (API 24 minimum per `README.md`).
+CI increments the patch version and `versionCode` for each new release from
+`main` (§9). To change the source version, update `package.json` and
+`android/app/build.gradle` together. Keep Android API 24 as the minimum.
 
 ## 4. Build the release APK
 
@@ -147,9 +129,6 @@ repository root):
 android\app\build\outputs\apk\release\app-release.apk
 ```
 
-This file is **not** present in the repository as part of this configuration
-work. Treat it as existing only once you have built it.
-
 ## 5. Verify the built APK
 
 Run these only after you have a real APK. Adjust the build-tools version to one
@@ -171,7 +150,7 @@ APK was signed by a different key. Gradle/AGP already aligns and signs the APK;
 if you ever sign manually, align **before** signing, because changing the file
 after signing invalidates the signature.
 
-Optional negative check (useful to prove the guard works): clear the five
+Optional negative check (useful to prove the guard works): clear the four
 release variables in the current session and run the release task again; it must
 fail with the explicit refusal message:
 
@@ -199,23 +178,11 @@ Get-ChildItem Env:KYROS_RELEASE_* | Remove-Item
   install. Recovery is uninstall/reinstall, which deletes the SQLite data in
   0.1 — there is no backup/restore yet.
 
-## 7. After re-running `expo prebuild`
+## 7. Database compatibility
 
-Prebuild regenerates `android/app/build.gradle`, so the release signing setup
-must be restored. It consists of four parts:
-
-1. The credential resolution block (`releaseSigningKeys`, `releaseSigning`,
-   `missingReleaseSigningKeys`, `releaseKeystoreFile`, `releaseSigningReady`)
-   near the top of `android/app/build.gradle`.
-2. A `release { ... }` entry inside `signingConfigs` using those values; the
-   existing `debug { ... }` entry stays as-is.
-3. `signingConfig signingConfigs.release` inside `buildTypes.release`, guarded
-   by `if (releaseSigningReady)`.
-4. The `gradle.taskGraph.whenReady { ... }` guard that throws a
-   `GradleException` when a release task runs without a complete configuration.
-
-The current `android/app/build.gradle` contains all four and is the canonical
-example. Re-run the checks in §2 and §5 after restoring them.
+Android opens the existing `files/SQLite/kyros.sqlite` database in place. For
+the first upgrade after changing the native SQLite driver, include income and
+expense entries created by the previous app in the upgrade check (§6).
 
 ## 8. Security summary
 
@@ -225,7 +192,6 @@ example. Re-run the checks in §2 and §5 after restoring them.
   variables supplied externally at build time.
 - Missing credentials cause a clear, early failure rather than a debug-signed
   or unsigned release artifact.
-- No APK is claimed, committed, or verified by this documentation change.
 
 ## 9. Automated checks and signed APK releases (CI)
 
@@ -237,8 +203,11 @@ The single push-only GitHub Actions workflow handles checks and signed APK relea
   pre-release feature testing. On `main`, it instead builds a signed release
   APK with all four configured Android ABIs after the quality checks pass.
 - **Signed APK on push to `main`.** A push to `main`, including a merge from
-  `dev`, builds the release from `android/`, verifies it (§5), and uploads the
-  APK as a GitHub Actions artifact. Pushes to `dev` do not produce release APKs.
+  `dev`, builds the release from `android/`, verifies it (§5), and publishes a
+  versioned APK on GitHub Releases. The same APK is also available as a GitHub
+  Actions artifact for 30 days. Pushes to `dev` do not produce release APKs.
+- **Release notes.** Add `release-notes/vX.Y.Z.md` before merging the release
+  into `main`. If that file is absent, GitHub generates notes from the changes.
 
 **Secrets.** The keystore and passwords are never committed. In CI they live as
 encrypted GitHub Actions repository secrets, exposed only to the `main` release
@@ -261,8 +230,8 @@ upgrades. Configure these repository secrets before triggering the workflow:
 need none of these secrets; release builds require all four values and refuse to
 build if any is missing (§4). A debug build cannot upgrade a release install (§6).
 
-**Versioning.** The source versions in `package.json`, `app.json`, and
-`android/app/build.gradle` must match, as must both Android version codes. After
+**Versioning.** The source versions in `package.json` and
+`android/app/build.gradle` must match. Gradle defines the base `versionCode`. After
 the signed APK passes alignment and certificate verification, CI creates an
 annotated `vX.Y.Z` tag on the `main` commit and records the APK's versionCode in
 the tag message. Each later main release increments the latest tagged patch and
