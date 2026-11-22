@@ -87,7 +87,7 @@ index.ts           React Native root component registration
   minus all expenses), current-calendar-month income and expense totals, and
   current-month expenses by category. The month follows the device's local date.
 - **Android range:** minimum Android 7.0 (API 24), with portrait layout.
-  Package `com.kyros.app`, base `versionCode` 3,
+  Package `com.kyros.app`, base `versionCode` 4,
   `versionName` 0.2.0. CI tag `versionCode` values are derived from release tags.
 - **Ordering:** the storage layer sorts by date, then creation time, then id,
   all descending, so the newest entry is always first.

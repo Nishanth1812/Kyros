@@ -100,8 +100,8 @@ Test-Path $env:KYROS_RELEASE_STORE_FILE   # must be True
 CI computes the release version and `versionCode` for each new release from
 `main` (§9). To change the source version, update `package.json` and
 `android/app/build.gradle` together. Keep Android API 24 as the minimum. The
-0.2 source base is version `0.2.0` with base `versionCode` 3, above the latest
-published tag's annotated code (v0.1.1 / code 2).
+0.2 source base is version `0.2.0` with base `versionCode` 4, above the latest
+published tag's annotated code (v0.1.2 / code 3). CI assigns code 5 to v0.2.0.
 
 ## 4. Build the release APK
 
