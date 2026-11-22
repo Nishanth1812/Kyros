@@ -122,6 +122,13 @@ describe('validateTransactionInput', () => {
     }
   });
 
+  test('accepts valid calendar dates with years below 0100', () => {
+    for (const date of ['0000-02-29', '0099-12-31']) {
+      const result = validateTransactionInput({ type: 'income', amountMinor: 100, date });
+      expect(result.ok).toBe(true);
+    }
+  });
+
   test('storage refuses to save invalid amount and throws TransactionValidationError', async () => {
     const { db, close } = createBunSqliteAdapter(':memory:');
     const storage = createTransactionStorage(db);
