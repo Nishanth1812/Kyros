@@ -5,8 +5,7 @@ how to install and upgrade it. Kyros uses React Native and the Android Gradle
 wrapper in `android/`. GitHub Actions builds and verifies signed APKs on pushes
 to `main` (§9).
 
-Related: [README.md](README.md) (dev setup and product decisions),
-[release-0.1.md](release-0.1.md) (release goal and checks), [plan.md](plan.md).
+Related: [README.md](README.md) (development setup and product details).
 
 ## 0. How the project is actually built
 
@@ -169,9 +168,9 @@ Get-ChildItem Env:KYROS_RELEASE_* | Remove-Item
 - **Same key is mandatory.** PackageManager only applies an update when the new
   APK is signed with the same key as the installed one. Reuse the §1 keystore
   for every release.
-- **Upgrade test (per `release-0.1.md`):** install release 1, add income and
-  expense entries, then install a newer release signed with the same key;
-  reopen the app and confirm the SQLite entries are still present and ordered.
+- **Upgrade test:** install an earlier release, add income and expense entries,
+  then install a newer release signed with the same key; reopen the app and
+  confirm the SQLite entries are still present and ordered.
 - **Debug vs release:** the debug key cannot overwrite a release-signed install
   (or vice versa). Test upgrades only with release-signed APKs.
 - **If the keystore is lost:** you cannot sign an APK that upgrades the existing
