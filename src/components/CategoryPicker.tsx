@@ -42,6 +42,7 @@ export default function CategoryPicker({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const savingRef = useRef(false);
+  const optionsDisabled = disabled || saving;
 
   const handleCreate = async () => {
     if (savingRef.current || disabled) return;
@@ -80,14 +81,14 @@ export default function CategoryPicker({
             <Pressable
               key={category.id}
               onPress={() => onSelect(category.id)}
-              disabled={disabled}
+              disabled={optionsDisabled}
               accessibilityRole="radio"
               accessibilityLabel={`${category.name}${category.isBuiltin ? ', built-in' : ', custom'}`}
-              accessibilityState={{ selected, disabled }}
+              accessibilityState={{ selected, disabled: optionsDisabled }}
               style={({ pressed }) => [
                 styles.option,
                 selected ? styles.optionSelected : null,
-                pressed && !disabled ? styles.optionPressed : null,
+                pressed && !optionsDisabled ? styles.optionPressed : null,
               ]}
             >
               <Text
