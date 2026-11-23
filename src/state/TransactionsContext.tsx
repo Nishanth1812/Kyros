@@ -9,9 +9,15 @@ import {
   type ReactNode,
 } from 'react';
 
-import { getCategoryStorage, getTransactionStorage } from '../lib/database';
+import {
+  getBudgetStorage,
+  getCategoryStorage,
+  getTransactionStorage,
+} from '../lib/database';
 import type {
+  Budget,
   Category,
+  NewBudgetInput,
   NewCategoryInput,
   NewTransactionInput,
   Transaction,
@@ -22,15 +28,20 @@ type LoadStatus = 'loading' | 'ready' | 'error';
 interface TransactionsContextValue {
   transactions: Transaction[];
   categories: Category[];
+  budgets: Budget[];
   status: LoadStatus;
   error: string | null;
-  /** Re-read transactions and categories without replacing lists with a loader. */
+  /** Re-read transactions, categories, and budgets without replacing lists with a loader. */
   refresh: () => Promise<void>;
   addTransaction: (input: NewTransactionInput) => Promise<Transaction>;
   updateTransaction: (id: number, input: NewTransactionInput) => Promise<Transaction>;
   /** Deletes the requested row if present; an unknown id is a no-op. */
   deleteTransaction: (id: number) => Promise<void>;
   addCategory: (input: NewCategoryInput) => Promise<Category>;
+  /** Creates or updates the limit for a scope, then refreshes the visible list. */
+  saveBudget: (input: NewBudgetInput) => Promise<Budget>;
+  /** Deletes the requested row if present; an unknown id is a no-op. */
+  deleteBudget: (id: number) => Promise<void>;
 }
 
 const TransactionsContext = createContext<TransactionsContextValue | null>(null);
@@ -44,6 +55,7 @@ function toMessage(error: unknown): string {
 export function TransactionsProvider({ children }: { children: ReactNode }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [budgets, setBudgets] = useState<Budget[]>([]);
   const [status, setStatus] = useState<LoadStatus>('loading');
   const [error, setError] = useState<string | null>(null);
   const hasLoaded = useRef(false);
@@ -52,17 +64,20 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
     if (!silent || !hasLoaded.current) setStatus('loading');
     setError(null);
     try {
-      const [transactionStorage, categoryStorage] = await Promise.all([
+      const [transactionStorage, categoryStorage, budgetStorage] = await Promise.all([
         getTransactionStorage(),
         getCategoryStorage(),
+        getBudgetStorage(),
       ]);
-      const [list, categoryList] = await Promise.all([
+      const [list, categoryList, budgetList] = await Promise.all([
         transactionStorage.listTransactions(),
         categoryStorage.listCategories(),
+        budgetStorage.listBudgets(),
       ]);
       hasLoaded.current = true;
       setTransactions(list);
       setCategories(categoryList);
+      setBudgets(budgetList);
       setStatus('ready');
     } catch (cause) {
       setError(toMessage(cause));
@@ -124,10 +139,34 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
     [load]
   );
 
+  const saveBudget = useCallback(
+    async (input: NewBudgetInput) => {
+      const storage = await getBudgetStorage();
+      const saved = await storage.saveBudget(input);
+      hasLoaded.current = true;
+      // Persist first. A failed refresh is a separate failure reported through
+      // the context's error state; it must not look like a failed save.
+      await load(true);
+      return saved;
+    },
+    [load]
+  );
+
+  const deleteBudget = useCallback(
+    async (id: number) => {
+      const storage = await getBudgetStorage();
+      await storage.deleteBudget(id);
+      hasLoaded.current = true;
+      await load(true);
+    },
+    [load]
+  );
+
   const value = useMemo<TransactionsContextValue>(
     () => ({
       transactions,
       categories,
+      budgets,
       status,
       error,
       refresh,
@@ -135,10 +174,13 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       updateTransaction,
       deleteTransaction,
       addCategory,
+      saveBudget,
+      deleteBudget,
     }),
     [
       transactions,
       categories,
+      budgets,
       status,
       error,
       refresh,
@@ -146,6 +188,8 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       updateTransaction,
       deleteTransaction,
       addCategory,
+      saveBudget,
+      deleteBudget,
     ]
   );
 

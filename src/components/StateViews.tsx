@@ -2,11 +2,11 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 
 import { colors, fontSize, radius, spacing } from '../theme/theme';
 
-export function LoadingView() {
+export function LoadingView({ subject = 'transactions' }: { subject?: string } = {}) {
   return (
-    <View style={styles.centered} accessibilityRole="progressbar" accessibilityLabel="Loading transactions">
+    <View style={styles.centered} accessibilityRole="progressbar" accessibilityLabel={`Loading ${subject}`}>
       <ActivityIndicator size="large" color={colors.primary} />
-      <Text style={styles.loadingText}>Loading transactions…</Text>
+      <Text style={styles.loadingText}>Loading {subject}…</Text>
     </View>
   );
 }
@@ -14,15 +14,17 @@ export function LoadingView() {
 export function ErrorView({
   message,
   onRetry,
+  subject = 'transactions',
 }: {
   message: string;
   onRetry: () => void;
+  subject?: string;
 }) {
   return (
     <View style={styles.centered}>
       <Text style={[styles.stateIcon, { fontSize: 48, color: colors.expense }]}>ⓘ</Text>
       <Text style={styles.stateTitle} accessibilityRole="header">
-        Couldn’t load transactions
+        Couldn’t load {subject}
       </Text>
       <Text style={styles.stateText}>{message}</Text>
       <Pressable
