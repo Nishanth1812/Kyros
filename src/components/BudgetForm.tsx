@@ -38,7 +38,7 @@ type FieldErrors = { amountMinor?: string; form?: string };
 function toMessage(error: unknown): string {
   return error instanceof Error && error.message
     ? error.message
-    : 'Could not save the budget. Please try again.';
+    : 'Could not update the budget. Please try again.';
 }
 
 /** Render integer paise as the rupee text the amount field expects. */
