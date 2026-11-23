@@ -1,8 +1,10 @@
 import { NativeModules } from 'react-native';
 
 import {
+  createBudgetStorage,
   createCategoryStorage,
   createTransactionStorage,
+  type BudgetStorage,
   type CategoryStorage,
   type TransactionStorage,
 } from '../storage';
@@ -93,4 +95,22 @@ export function getCategoryStorage(): Promise<CategoryStorage> {
     });
   }
   return categoryStoragePromise;
+}
+
+let budgetStoragePromise: Promise<BudgetStorage> | null = null;
+
+/** Lazily opens the same database after the schema has reached its latest version. */
+export function getBudgetStorage(): Promise<BudgetStorage> {
+  if (!budgetStoragePromise) {
+    budgetStoragePromise = (async () => {
+      await getTransactionStorage();
+      const storage = createBudgetStorage(await getDatabase());
+      await storage.initialize();
+      return storage;
+    })().catch((error: unknown) => {
+      budgetStoragePromise = null;
+      throw error;
+    });
+  }
+  return budgetStoragePromise;
 }

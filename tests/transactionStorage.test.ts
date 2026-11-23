@@ -3,6 +3,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
+  SCHEMA_VERSION,
   TransactionValidationError,
   createTransactionStorage,
   type SQLiteDatabaseLike,
@@ -170,7 +171,7 @@ describe('transaction storage', () => {
       });
 
       const version = await second.db.getFirstAsync<{ user_version: number }>('PRAGMA user_version;');
-      expect(version?.user_version).toBe(2);
+      expect(version?.user_version).toBe(SCHEMA_VERSION);
     } finally {
       second.close();
     }
