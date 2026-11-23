@@ -12,10 +12,67 @@ import {
 import BudgetForm from '../components/BudgetForm';
 import ScreenHeader from '../components/ScreenHeader';
 import { ErrorBanner, ErrorView, LoadingView } from '../components/StateViews';
+import {
+  calculateBudgetProgress,
+  type BudgetProgress,
+} from '../lib/budgetProgress';
+import { currentMonthBounds, currentMonthLabel } from '../lib/dates';
 import { formatMinorUnits } from '../lib/money';
 import type { Budget, NewBudgetInput } from '../storage';
 import { useTransactions } from '../state/TransactionsContext';
 import { colors, elevation, fontSize, radius, spacing } from '../theme/theme';
+
+function toMessage(error: unknown): string {
+  return error instanceof Error && error.message
+    ? error.message
+    : 'Something went wrong. Please try again.';
+}
+
+/** Spent/remaining against one saved limit, with a bar capped at 100%. */
+function BudgetProgressDetails({
+  progress,
+  label,
+}: {
+  progress: BudgetProgress;
+  label: string;
+}) {
+  const overByMinor = progress.remainingMinor < 0 ? -progress.remainingMinor : 0;
+  const percent =
+    progress.budgetMinor > 0
+      ? Math.min(100, (progress.spentMinor / progress.budgetMinor) * 100)
+      : 0;
+  const status =
+    overByMinor > 0
+      ? `Over budget by ${formatMinorUnits(overByMinor)}`
+      : `Remaining ${formatMinorUnits(progress.remainingMinor)}`;
+
+  return (
+    <View
+      style={styles.progressBlock}
+      accessible
+      accessibilityLabel={`${label}: spent ${formatMinorUnits(
+        progress.spentMinor
+      )} of ${formatMinorUnits(progress.budgetMinor)} this month. ${status}.`}
+    >
+      <Text style={styles.progressSpent}>
+        Spent {formatMinorUnits(progress.spentMinor)} of{' '}
+        {formatMinorUnits(progress.budgetMinor)}
+      </Text>
+      <View style={styles.progressTrack}>
+        <View
+          style={[
+            styles.progressFill,
+            overByMinor > 0 ? styles.progressFillOver : null,
+            { width: `${percent}%` },
+          ]}
+        />
+      </View>
+      <Text style={[styles.progressStatus, overByMinor > 0 ? styles.overText : null]}>
+        {status}
+      </Text>
+    </View>
+  );
+}
 
 interface EditingScope {
   /** Remounts the form whenever a different scope is opened. */
@@ -29,6 +86,7 @@ interface EditingScope {
 export default function BudgetsScreen() {
   const {
     budgets,
+    transactions,
     categories,
     status,
     error,
@@ -51,6 +109,36 @@ export default function BudgetsScreen() {
     }
     return byCategory;
   }, [budgets]);
+
+  // Recomputed on each render so a refresh after midnight or a month rollover
+  // uses the current local calendar. Actuals always come from stored history.
+  const now = new Date();
+  const bounds = currentMonthBounds(now);
+  const { progress, progressError } = useMemo<{
+    progress: BudgetProgress[];
+    progressError: string | null;
+  }>(() => {
+    try {
+      return {
+        progress: calculateBudgetProgress(
+          budgets,
+          transactions,
+          bounds.dateFrom,
+          bounds.dateTo
+        ),
+        progressError: null,
+      };
+    } catch (cause) {
+      return { progress: [], progressError: toMessage(cause) };
+    }
+  }, [budgets, transactions, bounds.dateFrom, bounds.dateTo]);
+  const progressById = useMemo(
+    () => new Map(progress.map((entry) => [entry.id, entry])),
+    [progress]
+  );
+  const overallProgress = overallBudget
+    ? progressById.get(overallBudget.id)
+    : undefined;
 
   const formBudget = editing?.budget;
 
@@ -153,6 +241,7 @@ export default function BudgetsScreen() {
       {status === 'ready' ? (
         <>
           {error ? <ErrorBanner message={error} /> : null}
+          {progressError ? <ErrorBanner message={progressError} /> : null}
           {editing ? (
             <BudgetForm
               key={editing.key}
@@ -174,31 +263,40 @@ export default function BudgetsScreen() {
             />
           ) : null}
 
+          <Text style={styles.sectionHint}>
+            Progress reflects saved expenses for {currentMonthLabel(now)}.
+          </Text>
           <Text style={styles.sectionTitle} accessibilityRole="header">
             Overall monthly limit
           </Text>
           <View style={styles.card}>
             {overallBudget ? (
-              <View
-                style={styles.limitRow}
-              >
-                <View style={styles.limitInfo}>
-                  <Text style={styles.limitName}>All expenses</Text>
-                  <Text style={styles.limitAmount}>
-                    {formatMinorUnits(overallBudget.amountMinor)}
-                  </Text>
+              <View>
+                <View style={styles.limitRow}>
+                  <View style={styles.limitInfo}>
+                    <Text style={styles.limitName}>All expenses</Text>
+                    <Text style={styles.limitAmount}>
+                      {formatMinorUnits(overallBudget.amountMinor)}
+                    </Text>
+                  </View>
+                  <Pressable
+                    onPress={() => openEdit(overallBudget)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Edit overall limit"
+                    style={({ pressed }) => [
+                      styles.cardAction,
+                      pressed ? styles.cardActionPressed : null,
+                    ]}
+                  >
+                    <Text style={styles.cardActionText}>Edit</Text>
+                  </Pressable>
                 </View>
-                <Pressable
-                  onPress={() => openEdit(overallBudget)}
-                  accessibilityRole="button"
-                  accessibilityLabel="Edit overall limit"
-                  style={({ pressed }) => [
-                    styles.cardAction,
-                    pressed ? styles.cardActionPressed : null,
-                  ]}
-                >
-                  <Text style={styles.cardActionText}>Edit</Text>
-                </Pressable>
+                {overallProgress ? (
+                  <BudgetProgressDetails
+                    progress={overallProgress}
+                    label="All expenses"
+                  />
+                ) : null}
               </View>
             ) : (
               <View style={styles.missingScope}>
@@ -235,6 +333,9 @@ export default function BudgetsScreen() {
             <View style={styles.card}>
               {expenseCategories.map((category, index) => {
                 const budget = categoryBudgets.get(category.id);
+                const budgetProgress = budget
+                  ? progressById.get(budget.id)
+                  : undefined;
                 return (
                   <View key={category.id}>
                     {index > 0 ? <View style={styles.divider} /> : null}
@@ -272,6 +373,12 @@ export default function BudgetsScreen() {
                         </Text>
                       </Pressable>
                     </View>
+                    {budgetProgress ? (
+                      <BudgetProgressDetails
+                        progress={budgetProgress}
+                        label={category.name}
+                      />
+                    ) : null}
                   </View>
                 );
               })}
@@ -395,5 +502,36 @@ const styles = StyleSheet.create({
     fontSize: fontSize.small,
     color: colors.textMuted,
     textAlign: 'center',
+  },
+  progressBlock: {
+    marginTop: spacing.sm,
+  },
+  progressSpent: {
+    fontSize: fontSize.small,
+    color: colors.textMuted,
+  },
+  progressTrack: {
+    height: 8,
+    marginTop: spacing.sm,
+    borderRadius: radius.pill,
+    backgroundColor: colors.border,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: 8,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primary,
+  },
+  progressFillOver: {
+    backgroundColor: colors.danger,
+  },
+  progressStatus: {
+    marginTop: spacing.xs,
+    fontSize: fontSize.body,
+    fontWeight: '700',
+    color: colors.income,
+  },
+  overText: {
+    color: colors.danger,
   },
 });
