@@ -3,38 +3,16 @@ import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native
 
 import ScreenHeader from '../components/ScreenHeader';
 import { ErrorBanner, ErrorView, LoadingView } from '../components/StateViews';
+import { currentMonthBounds, currentMonthLabel } from '../lib/dates';
 import { formatMinorUnits } from '../lib/money';
 import { summarizeTransactions, type DashboardSummary } from '../lib/summaries';
 import { useTransactions } from '../state/TransactionsContext';
 import { colors, elevation, fontSize, radius, spacing } from '../theme/theme';
 
-function pad2(value: number): string {
-  return value < 10 ? `0${value}` : String(value);
-}
-
 function toMessage(error: unknown): string {
   return error instanceof Error && error.message
     ? error.message
     : 'Something went wrong. Please try again.';
-}
-
-/** Inclusive local-calendar month bounds in the YYYY-MM-DD form storage uses. */
-function currentMonthBounds(now: Date): {
-  dateFrom: string;
-  dateTo: string;
-  label: string;
-} {
-  const year = now.getFullYear();
-  const month = now.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  return {
-    dateFrom: `${year}-${pad2(month + 1)}-01`,
-    dateTo: `${year}-${pad2(month + 1)}-${pad2(daysInMonth)}`,
-    label: new Intl.DateTimeFormat('en-IN', {
-      month: 'long',
-      year: 'numeric',
-    }).format(now),
-  };
 }
 
 export default function DashboardScreen() {
@@ -52,7 +30,9 @@ export default function DashboardScreen() {
 
   // Recomputed on each render so a refresh after midnight/month rollover uses
   // the current local calendar. The data itself always comes from the context.
-  const bounds = currentMonthBounds(new Date());
+  const now = new Date();
+  const bounds = currentMonthBounds(now);
+  const label = currentMonthLabel(now);
   const { summary, summaryError } = useMemo<{
     summary: DashboardSummary | null;
     summaryError: string | null;
@@ -120,7 +100,7 @@ export default function DashboardScreen() {
               </View>
 
               <Text style={styles.sectionTitle} accessibilityRole="header">
-                {bounds.label}
+                {label}
               </Text>
               <View style={styles.card}>
                 <View
