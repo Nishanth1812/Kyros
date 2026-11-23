@@ -1,11 +1,12 @@
 # Kyros
 
-Kyros 0.2 is a local-first Android app for recording, organizing, and reviewing
-income and expenses. Entries live in on-device SQLite, are stored as integer minor
-units, and can be grouped by category, corrected, filtered, and summarized on a
-dashboard. No account, network, or backend is required.
+Kyros 0.3 is a local-first Android app for recording, organizing, reviewing, and
+budgeting income and expenses. Entries live in on-device SQLite, are stored as
+integer minor units, and can be grouped by category, corrected, filtered, and
+summarized on a dashboard. Recurring monthly budgets show spending progress
+against saved limits. No account, network, or backend is required.
 
-## Features (0.2)
+## Features (0.3)
 
 - **Categories:** built-in income and expense categories plus your own custom
   categories can be selected when adding or editing a transaction.
@@ -15,8 +16,12 @@ dashboard. No account, network, or backend is required.
   inclusive date range, with a clear-filters action.
 - **Dashboard:** lifetime net balance, current-month income and expense totals,
   and current-month expenses by category, all derived from saved transactions.
-- **Local migration:** existing 0.1 databases are upgraded in place; every saved
-  transaction is kept and assigned to its type's `Other` category.
+- **Budgets:** set a recurring monthly limit for all expenses and for individual
+  expense categories, then see current-month spent, remaining, and over-budget
+  amounts on the Budgets tab.
+- **Local migration:** existing 0.1 databases are upgraded in place with every
+  saved transaction kept and assigned to its type's `Other` category; 0.2
+  databases gain budget storage without changing any transaction or category.
 
 ## Development
 
@@ -54,19 +59,20 @@ key and need none of this. See
 [ANDROID_RELEASE.md](ANDROID_RELEASE.md) for setup, release steps, and versioning
 rules. Each verified main release gets an annotated `vX.Y.Z` tag; rerunning the
 same commit reuses its version. The first release on a new minor line uses that
-line's exact source version, so advancing from 0.1.x to source 0.2.0 produces
-`v0.2.0`; later 0.2.x releases increment the patch.
+line's exact source version, so advancing from the 0.2.x line (v0.2.0/code 5) to
+source 0.3.0 produces `v0.3.0` with published code 6; later 0.3.x releases
+increment the patch and versionCode.
 
 ## Structure
 
 ```
 src/
-  storage/       amounts, validation, schema, categories and SQLite access (shared module)
-  lib/           database setup, INR money, date helpers, filters and summaries
-  state/         transactions and categories context: loading / error / data and mutations
-  navigation/    bottom tabs (Dashboard, Add and History)
-  components/    transaction form, category picker, edit modal, filters, row, list, and states
-  screens/       AddTransactionScreen, HistoryScreen and DashboardScreen
+  storage/       amounts, validation, schema, categories, budgets and SQLite access (shared module)
+  lib/           database setup, INR money, dates, filters, summaries and budget progress
+  state/         transactions, categories and budgets context: loading / error / data and mutations
+  navigation/    bottom tabs (Dashboard, Add, History and Budgets)
+  components/    transaction and budget forms, category picker, edit modal, filters, row, list, and states
+  screens/       AddTransactionScreen, HistoryScreen, DashboardScreen and BudgetsScreen
   theme/         shared colours, spacing, radius and typography
 App.tsx            providers and root navigator
 index.ts           React Native root component registration
@@ -86,16 +92,26 @@ index.ts           React Native root component registration
 - **Dashboard periods:** the dashboard shows lifetime net balance (all income
   minus all expenses), current-calendar-month income and expense totals, and
   current-month expenses by category. The month follows the device's local date.
+- **Budgets:** limits recur each local calendar month and are saved as positive
+  integer paise. Progress is derived only from expense transactions in the
+  current local month (first through last day, inclusive), so income is excluded
+  and actuals are never stored. Overspend is shown exactly; the visual bar caps
+  at 100%. There is at most one overall limit and one per expense category, with
+  no rollover or alerts.
 - **Android range:** minimum Android 7.0 (API 24), with portrait layout.
-  Package `com.kyros.app`, base `versionCode` 4,
-  `versionName` 0.2.0. CI tag `versionCode` values are derived from release tags.
+  Package `com.kyros.app`, base `versionCode` 5,
+  `versionName` 0.3.0. CI tag `versionCode` values are derived from release tags:
+  source code 5 publishes v0.3.0/code 6 after v0.2.0/code 5.
 - **Ordering:** the storage layer sorts by date, then creation time, then id,
   all descending, so the newest entry is always first.
 - **Migration:** a v1-to-v2 SQLite migration upgrades existing 0.1 databases in
   place, keeping every transaction's ID, amount, type, date, description, and
-  creation time. Migrated rows get the matching type's `Other` category and can
-  be recategorized by editing. The migration is transactional: a failure leaves
-  the original data and schema version intact.
-- **Offline:** all reads and writes use the local `kyros.sqlite` database on the
-  device; the app makes no network requests. Android automatic backup is disabled;
-  data is lost if the app is uninstalled or the device is lost.
+  creation time; migrated rows get the matching type's `Other` category and can
+  be recategorized by editing. A v2-to-v3 migration then adds budget storage for
+  0.2 databases without changing any transaction or category row; fresh installs
+  create v3 directly. Migrations run in one transaction: a failure leaves the
+  original data and schema version intact.
+- **Offline:** all reads and writes, including budgets, use the local
+  `kyros.sqlite` database on the device; the app makes no network requests.
+  Android automatic backup is disabled; data is lost if the app is uninstalled
+  or the device is lost.
