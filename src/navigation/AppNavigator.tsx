@@ -9,6 +9,7 @@ import {
 import AddTransactionScreen from '../screens/AddTransactionScreen';
 import BudgetsScreen from '../screens/BudgetsScreen';
 import DashboardScreen from '../screens/DashboardScreen';
+import DataManagementScreen from '../screens/DataManagementScreen';
 import HistoryScreen from '../screens/HistoryScreen';
 import { colors } from '../theme/theme';
 import type { RootTabParamList } from './types';
@@ -33,6 +34,7 @@ const tabIcons: Record<keyof RootTabParamList, string> = {
   Add: '＋',
   History: '◷',
   Budgets: '◈',
+  Data: '⛁',
 };
 
 export default function AppNavigator() {
@@ -63,6 +65,7 @@ export default function AppNavigator() {
         <Tab.Screen name="Add" component={AddTransactionScreen} />
         <Tab.Screen name="History" component={HistoryScreen} />
         <Tab.Screen name="Budgets" component={BudgetsScreen} />
+        <Tab.Screen name="Data" component={DataManagementScreen} />
       </Tab.Navigator>
     </NavigationContainer>
   );
