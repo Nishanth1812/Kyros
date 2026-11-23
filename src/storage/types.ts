@@ -175,3 +175,57 @@ export interface BudgetStorage {
   /** Deletes the requested row if present; an unknown id is a no-op. */
   deleteBudget(id: number): Promise<void>;
 }
+
+export interface KyrosBackupMetadata {
+  version: 1;
+  appVersion: string;
+  exportedAt: string;
+}
+
+export interface BackupCategory {
+  id: number;
+  type: TransactionType;
+  name: string;
+  isBuiltin: boolean;
+}
+
+export interface BackupTransaction {
+  id: number;
+  type: TransactionType;
+  amountMinor: MinorUnits;
+  date: string;
+  description: string | null;
+  createdAt: number;
+  categoryId: number;
+}
+
+export interface BackupBudget {
+  id: number;
+  categoryId: number | null;
+  amountMinor: MinorUnits;
+}
+
+export interface KyrosBackupData {
+  categories: BackupCategory[];
+  transactions: BackupTransaction[];
+  budgets: BackupBudget[];
+}
+
+export interface KyrosBackupV1 {
+  meta: KyrosBackupMetadata;
+  data: KyrosBackupData;
+}
+
+export interface RestoreResult {
+  categoriesCount: number;
+  transactionsCount: number;
+  budgetsCount: number;
+}
+
+export class BackupValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'BackupValidationError';
+  }
+}
+
