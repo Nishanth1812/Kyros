@@ -87,7 +87,7 @@ budgets apply per category, overall, or both. Define period boundaries and
 behavior when a category is renamed or removed. Defer alerts and rollover rules
 unless user feedback establishes a need.
 
-### 0.4 — Local data safety and quality
+### 0.4 — Local data safety and quality (implemented)
 
 **Goal:** Make locally stored financial data easier to recover and improve the
 app's reliability and accessibility before considering connected services.
