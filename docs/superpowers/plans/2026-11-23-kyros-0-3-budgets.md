@@ -65,7 +65,7 @@ Create a budgets table with integer-paise validation, a nullable category foreig
 
 - [ ] **Step 4: Add storage validation and persistence tests**
 
-Add `test_budget_storage_saves_and_updates_overall_and_category_scopes`, `test_budget_storage_rejects_duplicate_invalid_and_income_category_budgets`, and `test_budget_storage_delete_leaves_transactions_and_categories_unchanged`. Assert positive safe-integer paise, category existence/type checks, stable listing, and deletion behavior.
+Add `test_budget_storage_upserts_overall_and_category_scopes`, `test_budget_storage_rejects_invalid_amounts_and_income_categories`, `test_database_prevents_duplicate_overall_and_category_budgets`, and `test_budget_storage_delete_leaves_transactions_and_categories_unchanged`. Assert positive safe-integer paise, category existence/type checks, stable listing, and deletion behavior. Saving an already-configured scope updates its row; database constraints prevent a second row for that scope.
 
 - [ ] **Step 5: Implement budget storage and exports**
 
