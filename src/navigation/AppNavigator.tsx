@@ -7,6 +7,7 @@ import {
 } from '@react-navigation/native';
 
 import AddTransactionScreen from '../screens/AddTransactionScreen';
+import BudgetsScreen from '../screens/BudgetsScreen';
 import DashboardScreen from '../screens/DashboardScreen';
 import HistoryScreen from '../screens/HistoryScreen';
 import { colors } from '../theme/theme';
@@ -31,6 +32,7 @@ const tabIcons: Record<keyof RootTabParamList, string> = {
   Dashboard: '▦',
   Add: '＋',
   History: '◷',
+  Budgets: '◈',
 };
 
 export default function AppNavigator() {
@@ -60,6 +62,7 @@ export default function AppNavigator() {
         <Tab.Screen name="Dashboard" component={DashboardScreen} />
         <Tab.Screen name="Add" component={AddTransactionScreen} />
         <Tab.Screen name="History" component={HistoryScreen} />
+        <Tab.Screen name="Budgets" component={BudgetsScreen} />
       </Tab.Navigator>
     </NavigationContainer>
   );

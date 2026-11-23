@@ -1,5 +1,6 @@
 export { createTransactionStorage } from './transactionStorage';
 export { createCategoryStorage } from './categoryStorage';
+export { createBudgetStorage } from './budgetStorage';
 export { initializeSchema, SCHEMA_VERSION } from './schema';
 export {
   validateTransactionInput,
@@ -9,8 +10,17 @@ export {
   validateCategoryInput,
   assertValidCategoryInput,
 } from './validation';
-export { TransactionValidationError, CategoryValidationError } from './types';
+export {
+  TransactionValidationError,
+  CategoryValidationError,
+  BudgetValidationError,
+} from './types';
 export type {
+  Budget,
+  NewBudgetInput,
+  BudgetStorage,
+  BudgetValidationField,
+  BudgetValidationErrorEntry,
   Category,
   NewCategoryInput,
   CategoryStorage,

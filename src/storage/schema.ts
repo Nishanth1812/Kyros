@@ -1,6 +1,6 @@
 import { SQLiteDatabaseLike, TransactionType } from './types';
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 /** Built-in categories seeded on fresh installs and during the v1 -> v2 migration. */
 export const BUILTIN_CATEGORIES: ReadonlyArray<{ type: TransactionType; name: string }> = [
@@ -51,6 +51,31 @@ ON transactions (date DESC, created_at DESC, id DESC);
 `;
 
 /**
+ * A null category_id is the overall budget; any other value is a budget for
+ * that expense category. Amounts use the same integer-paise rule as
+ * transactions.
+ */
+export const CREATE_BUDGETS_TABLE_SQL = `
+CREATE TABLE IF NOT EXISTS budgets (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  category_id INTEGER REFERENCES categories(id),
+  amount_minor INTEGER NOT NULL CHECK (typeof(amount_minor) = 'integer' AND amount_minor > 0),
+  CHECK (category_id IS NULL OR category_id > 0)
+);
+`;
+
+/**
+ * SQLite treats NULL values as distinct in a unique index, so a plain unique
+ * index on category_id would allow multiple overall budgets. Coalescing to 0
+ * (category ids are always positive) permits one overall budget and one budget
+ * per category.
+ */
+export const CREATE_BUDGETS_SCOPE_INDEX_SQL = `
+CREATE UNIQUE INDEX IF NOT EXISTS idx_budgets_scope
+ON budgets (COALESCE(category_id, 0));
+`;
+
+/**
  * Seed built-in categories without duplicating ones that are already present.
  * Parameterized and safe to call more than once.
  */
@@ -92,6 +117,14 @@ async function migrateV1ToV2(db: SQLiteDatabaseLike): Promise<void> {
   await db.execAsync(CREATE_TRANSACTIONS_DATE_INDEX_SQL);
 
   // Only mark the database upgraded once every step above has succeeded.
+  await db.execAsync('PRAGMA user_version = 2;');
+}
+
+/** Add budget storage without touching existing transaction or category rows. */
+async function migrateV2ToV3(db: SQLiteDatabaseLike): Promise<void> {
+  await db.execAsync(CREATE_BUDGETS_TABLE_SQL);
+  await db.execAsync(CREATE_BUDGETS_SCOPE_INDEX_SQL);
+
   await db.execAsync(`PRAGMA user_version = ${SCHEMA_VERSION};`);
 }
 
@@ -117,13 +150,21 @@ export async function initializeSchema(db: SQLiteDatabaseLike): Promise<void> {
     }
 
     if (currentVersion < 1) {
+      // Fresh install: create the latest schema directly.
       await db.execAsync(CREATE_CATEGORIES_TABLE_SQL);
       await seedBuiltinCategories(db);
       await db.execAsync(CREATE_TRANSACTIONS_TABLE_SQL);
       await db.execAsync(CREATE_TRANSACTIONS_DATE_INDEX_SQL);
+      await db.execAsync(CREATE_BUDGETS_TABLE_SQL);
+      await db.execAsync(CREATE_BUDGETS_SCOPE_INDEX_SQL);
       await db.execAsync(`PRAGMA user_version = ${SCHEMA_VERSION};`);
-    } else if (currentVersion < 2) {
-      await migrateV1ToV2(db);
+    } else {
+      if (currentVersion < 2) {
+        await migrateV1ToV2(db);
+      }
+      if (currentVersion < 3) {
+        await migrateV2ToV3(db);
+      }
     }
   };
 

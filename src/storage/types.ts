@@ -132,3 +132,46 @@ export interface CategoryStorage {
   listCategories(type?: TransactionType): Promise<Category[]>;
   createCategory(input: NewCategoryInput): Promise<Category>;
 }
+
+/**
+ * A recurring monthly limit. `categoryId: null` is the overall budget; any
+ * other value is the expense category the limit applies to.
+ */
+export interface Budget {
+  id: number;
+  categoryId: number | null;
+  amountMinor: MinorUnits;
+}
+
+export interface NewBudgetInput {
+  categoryId?: unknown;
+  amountMinor: unknown;
+}
+
+export type BudgetValidationField = 'amountMinor' | 'categoryId';
+
+export interface BudgetValidationErrorEntry {
+  field: BudgetValidationField;
+  message: string;
+}
+
+export class BudgetValidationError extends Error {
+  readonly errors: BudgetValidationErrorEntry[];
+
+  constructor(errors: BudgetValidationErrorEntry[]) {
+    const message = errors.map((e) => `${e.field}: ${e.message}`).join('; ');
+    super(message);
+    this.name = 'BudgetValidationError';
+    this.errors = errors;
+  }
+}
+
+export interface BudgetStorage {
+  initialize(): Promise<void>;
+  /** Overall budget first, then category budgets ordered by category id. */
+  listBudgets(): Promise<Budget[]>;
+  /** Creates or updates the budget for the requested scope. */
+  saveBudget(input: NewBudgetInput): Promise<Budget>;
+  /** Deletes the requested row if present; an unknown id is a no-op. */
+  deleteBudget(id: number): Promise<void>;
+}
