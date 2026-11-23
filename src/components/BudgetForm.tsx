@@ -8,7 +8,8 @@ import {
   View,
 } from 'react-native';
 
-import { parseAmountToMinorUnits, refreshAmountError } from '../lib/money';
+import { refreshAmountError } from '../lib/money';
+import { validateBudgetForm } from '../lib/budgetForm';
 import type { Category, NewBudgetInput } from '../storage';
 import { colors, elevation, fontSize, radius, spacing } from '../theme/theme';
 
@@ -28,7 +29,7 @@ export interface BudgetFormProps {
   /** Persist the limit. Throwing keeps the form open and shows the error. */
   onSave: (input: NewBudgetInput) => Promise<void>;
   /** Remove the edited limit. Only rendered when editing an existing limit. */
-  onDelete?: () => void | Promise<void>;
+  onDelete?: () => Promise<boolean>;
   onCancel: () => void;
 }
 
@@ -76,16 +77,9 @@ export default function BudgetForm({
   const handleSubmit = async () => {
     if (busyRef.current) return;
 
-    const parsed = parseAmountToMinorUnits(amount);
-    if (!parsed.ok) {
-      setErrors({ amountMinor: parsed.error });
-      return;
-    }
-    if (
-      categoryId !== null &&
-      !categories.some((category) => category.id === categoryId)
-    ) {
-      setErrors({ form: 'Choose an expense category.' });
+    const validation = validateBudgetForm(amount, categoryId, categories);
+    if (!validation.ok) {
+      setErrors({ [validation.field]: validation.message });
       return;
     }
 
@@ -93,7 +87,7 @@ export default function BudgetForm({
     setBusy(true);
     setErrors({});
     try {
-      await onSave({ categoryId, amountMinor: parsed.amountMinor });
+      await onSave(validation.input);
       onCancel();
     } catch (error) {
       // Keep the typed amount and selected scope so a retry loses nothing.
@@ -111,8 +105,7 @@ export default function BudgetForm({
     setBusy(true);
     setErrors({});
     try {
-      await onDelete();
-      onCancel();
+      if (await onDelete()) onCancel();
     } catch (error) {
       setErrors({ form: toMessage(error) });
     } finally {
@@ -128,7 +121,7 @@ export default function BudgetForm({
         'Selected category');
 
   return (
-    <View style={styles.card} accessible accessibilityLabel="Monthly budget form">
+    <View style={styles.card}>
       <Text style={styles.title} accessibilityRole="header">
         {editing ? `Edit ${scopeLabel} limit` : 'Set a monthly limit'}
       </Text>

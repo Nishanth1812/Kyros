@@ -17,12 +17,6 @@ import type { Budget, NewBudgetInput } from '../storage';
 import { useTransactions } from '../state/TransactionsContext';
 import { colors, elevation, fontSize, radius, spacing } from '../theme/theme';
 
-function toMessage(error: unknown): string {
-  return error instanceof Error && error.message
-    ? error.message
-    : 'Something went wrong. Please try again.';
-}
-
 interface EditingScope {
   /** Remounts the form whenever a different scope is opened. */
   key: string;
@@ -44,7 +38,6 @@ export default function BudgetsScreen() {
   } = useTransactions();
   const [refreshing, setRefreshing] = useState(false);
   const [editing, setEditing] = useState<EditingScope | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
 
   const expenseCategories = useMemo(
     () => categories.filter((category) => category.type === 'expense'),
@@ -71,47 +64,59 @@ export default function BudgetsScreen() {
   };
 
   const handleSave = async (input: NewBudgetInput) => {
-    setActionError(null);
     await saveBudget(input);
   };
 
-  const handleDeleteBudget = (budget: Budget) => {
+  const handleDeleteBudget = (budget: Budget): Promise<boolean> => {
     const label =
       budget.categoryId === null
         ? 'overall'
         : categories.find((category) => category.id === budget.categoryId)?.name ??
           'category';
-    Alert.alert(
-      'Remove budget',
-      `Remove the ${label} monthly limit? This cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: () => {
-            void (async () => {
-              setActionError(null);
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      let removalStarted = false;
+      const finish = (removed: boolean) => {
+        if (settled) return;
+        settled = true;
+        resolve(removed);
+      };
+
+      Alert.alert(
+        'Remove budget',
+        `Remove the ${label} monthly limit? This cannot be undone.`,
+        [
+          { text: 'Cancel', style: 'cancel', onPress: () => finish(false) },
+          {
+            text: 'Remove',
+            style: 'destructive',
+            onPress: async () => {
+              removalStarted = true;
               try {
                 await deleteBudget(budget.id);
-                setEditing(null);
+                finish(true);
               } catch (cause) {
-                setActionError(toMessage(cause));
+                settled = true;
+                reject(cause);
               }
-            })();
+            },
           },
-        },
-      ]
-    );
+        ],
+        {
+          cancelable: true,
+          onDismiss: () => {
+            if (!removalStarted) finish(false);
+          },
+        }
+      );
+    });
   };
 
   const openCreate = (categoryId: number | null) => {
-    setActionError(null);
     setEditing({ key: `create-${categoryId ?? 'overall'}`, categoryId });
   };
 
   const openEdit = (budget: Budget) => {
-    setActionError(null);
     setEditing({
       key: `edit-${budget.id}`,
       categoryId: budget.categoryId,
@@ -137,18 +142,17 @@ export default function BudgetsScreen() {
         subtitle="Set a recurring monthly limit for all expenses or for individual expense categories. Limits reset each calendar month."
       />
 
-      {status === 'loading' ? <LoadingView /> : null}
+      {status === 'loading' ? <LoadingView subject="budgets" /> : null}
       {status === 'error' ? (
         <ErrorView
           message={error ?? 'Unknown error.'}
           onRetry={() => void refresh()}
+          subject="budgets"
         />
       ) : null}
       {status === 'ready' ? (
         <>
           {error ? <ErrorBanner message={error} /> : null}
-          {actionError ? <ErrorBanner message={actionError} /> : null}
-
           {editing ? (
             <BudgetForm
               key={editing.key}
@@ -166,7 +170,6 @@ export default function BudgetsScreen() {
               onDelete={formBudget ? () => handleDeleteBudget(formBudget) : undefined}
               onCancel={() => {
                 setEditing(null);
-                setActionError(null);
               }}
             />
           ) : null}
@@ -178,10 +181,6 @@ export default function BudgetsScreen() {
             {overallBudget ? (
               <View
                 style={styles.limitRow}
-                accessible
-                accessibilityLabel={`Overall monthly limit ${formatMinorUnits(
-                  overallBudget.amountMinor
-                )}`}
               >
                 <View style={styles.limitInfo}>
                   <Text style={styles.limitName}>All expenses</Text>
@@ -241,14 +240,6 @@ export default function BudgetsScreen() {
                     {index > 0 ? <View style={styles.divider} /> : null}
                     <View
                       style={styles.limitRow}
-                      accessible
-                      accessibilityLabel={
-                        budget
-                          ? `${category.name} monthly limit ${formatMinorUnits(
-                              budget.amountMinor
-                            )}`
-                          : `${category.name} limit not set`
-                      }
                     >
                       <View style={styles.limitInfo}>
                         <Text style={styles.limitName}>{category.name}</Text>
