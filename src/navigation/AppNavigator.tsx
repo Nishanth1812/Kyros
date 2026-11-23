@@ -61,11 +61,31 @@ export default function AppNavigator() {
           ),
         })}
       >
-        <Tab.Screen name="Dashboard" component={DashboardScreen} />
-        <Tab.Screen name="Add" component={AddTransactionScreen} />
-        <Tab.Screen name="History" component={HistoryScreen} />
-        <Tab.Screen name="Budgets" component={BudgetsScreen} />
-        <Tab.Screen name="Data" component={DataManagementScreen} />
+        <Tab.Screen
+          name="Dashboard"
+          component={DashboardScreen}
+          options={{ tabBarAccessibilityLabel: 'Dashboard tab, view financial summary' }}
+        />
+        <Tab.Screen
+          name="Add"
+          component={AddTransactionScreen}
+          options={{ tabBarAccessibilityLabel: 'Add transaction tab, record income or expense' }}
+        />
+        <Tab.Screen
+          name="History"
+          component={HistoryScreen}
+          options={{ tabBarAccessibilityLabel: 'Transaction history tab, browse and filter transactions' }}
+        />
+        <Tab.Screen
+          name="Budgets"
+          component={BudgetsScreen}
+          options={{ tabBarAccessibilityLabel: 'Monthly budgets tab, set and track spending limits' }}
+        />
+        <Tab.Screen
+          name="Data"
+          component={DataManagementScreen}
+          options={{ tabBarAccessibilityLabel: 'Data safety tab, backup and restore data' }}
+        />
       </Tab.Navigator>
     </NavigationContainer>
   );
