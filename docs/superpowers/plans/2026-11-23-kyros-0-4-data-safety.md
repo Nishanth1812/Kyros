@@ -82,27 +82,27 @@
 - `exportBackupData(db: SQLiteDatabaseLike): Promise<KyrosBackupV1>`
 - `restoreBackupData(db: SQLiteDatabaseLike, backup: KyrosBackupV1): Promise<{ transactionsCount: number; categoriesCount: number; budgetsCount: number }>`
 
-- [ ] **Step 1: Add validation tests for backup payloads**
+- [x] **Step 1: Add validation tests for backup payloads**
   Add unit tests in `tests/backupValidation.test.ts` checking: valid backup payload acceptance, rejection of invalid JSON/envelopes, rejection of negative or non-integer paise, rejection of unknown/mismatched category IDs in transactions and budgets, rejection of multiple overall budgets or duplicate category budgets, and rejection of budgets referencing income categories.
 
-- [ ] **Step 2: Run validation tests to confirm failure**
+- [x] **Step 2: Run validation tests to confirm failure**
   Run: `bun test tests/backupValidation.test.ts`
   Expected: fails due to missing modules.
 
-- [ ] **Step 3: Implement backup validation logic**
+- [x] **Step 3: Implement backup validation logic**
   Implement `validateBackupPayload` in `src/storage/backupValidation.ts` with comprehensive checks and informative error messages.
 
-- [ ] **Step 4: Add backup export and atomic restore tests**
+- [x] **Step 4: Add backup export and atomic restore tests**
   Add integration tests in `tests/backupStorage.test.ts`:
   - `test_export_backup_captures_all_current_data`
   - `test_restore_backup_replaces_all_tables_atomically`
   - `test_restore_backup_rolls_back_completely_on_error`
   - `test_restore_preserves_builtin_categories`
 
-- [ ] **Step 5: Implement backup storage export and restore**
+- [x] **Step 5: Implement backup storage export and restore**
   Implement `exportBackupData` and `restoreBackupData` in `src/storage/backupStorage.ts`. Use a single atomic transaction (`BEGIN` ... `COMMIT` / `ROLLBACK`). Ensure all existing rows are cleared and replaced cleanly. Re-seed any missing built-in categories.
 
-- [ ] **Step 6: Run tests and typecheck**
+- [x] **Step 6: Run tests and typecheck**
   Run: `bun test tests/backupValidation.test.ts tests/backupStorage.test.ts` and `npm run typecheck`.
 
 ---
@@ -128,19 +128,19 @@
   }
   ```
 
-- [ ] **Step 1: Implement Android KyrosFileModule**
+- [x] **Step 1: Implement Android KyrosFileModule**
   In Kotlin, create `KyrosFileModule` using `ActivityEventListener` to handle `ACTION_CREATE_DOCUMENT` and `ACTION_OPEN_DOCUMENT` intents cleanly. Write content via `contentResolver.openOutputStream(uri)` and read content via `contentResolver.openInputStream(uri)`. Return null or false if cancelled by user.
 
-- [ ] **Step 2: Register KyrosFileModule in Android application**
+- [x] **Step 2: Register KyrosFileModule in Android application**
   Register the package in `MainApplication.kt` so React Native can access `NativeModules.KyrosFile`.
 
-- [ ] **Step 3: Create TypeScript bridge with fallback support**
+- [x] **Step 3: Create TypeScript bridge with fallback support**
   In `src/lib/fileBridge.ts`, wrap `NativeModules.KyrosFile`. Provide graceful fallback and clear error reporting.
 
-- [ ] **Step 4: Add fileBridge tests**
+- [x] **Step 4: Add fileBridge tests**
   Add mock tests in `tests/fileBridge.test.ts` verifying proper handling of file saving, file reading, cancellation, and error handling.
 
-- [ ] **Step 5: Run tests and typecheck**
+- [x] **Step 5: Run tests and typecheck**
   Run: `bun test tests/fileBridge.test.ts` and `npm run typecheck`.
 
 ---
@@ -163,19 +163,19 @@
   - "Restore Backup" button with confirmation modal/alert previewing record counts and offering pre-restore export
   - Informative error banners and success messages
 
-- [ ] **Step 1: Update TransactionsContext with reloadAll**
+- [x] **Step 1: Update TransactionsContext with reloadAll**
   Expose a method in `TransactionsContext` that reloads transactions, categories, and budgets concurrently so UI updates immediately upon restore.
 
-- [ ] **Step 2: Add Data tab to navigation**
+- [x] **Step 2: Add Data tab to navigation**
   Update `types.ts` and `AppNavigator.tsx` to include `Data` with icon `⛁`.
 
-- [ ] **Step 3: Implement DataManagementScreen**
+- [x] **Step 3: Implement DataManagementScreen**
   Implement the screen with accessible cards for record counts, Backup and Restore buttons, confirmation dialog, and error states.
 
-- [ ] **Step 4: Add tests for DataManagement logic**
+- [x] **Step 4: Add tests for DataManagement logic**
   Add tests in `tests/dataManagementScreen.test.ts` verifying confirmation dialog parameters, pre-restore backup recommendations, and error handling.
 
-- [ ] **Step 5: Run tests and typecheck**
+- [x] **Step 5: Run tests and typecheck**
   Run: `bun test` and `npm run typecheck`.
 
 ---
@@ -195,19 +195,19 @@
 - Modify: `src/screens/DataManagementScreen.tsx`
 - Create: `tests/accessibility.test.ts`
 
-- [ ] **Step 1: Audit and enhance accessibility props**
+- [x] **Step 1: Audit and enhance accessibility props**
   Ensure all buttons and inputs have `accessible={true}`, explicit `accessibilityRole`, descriptive `accessibilityLabel`, and clear error announcements.
 
-- [ ] **Step 2: Guarantee minimum 48dp touch targets**
+- [x] **Step 2: Guarantee minimum 48dp touch targets**
   Add `minHeight: 48` / `minWidth: 48` or `hitSlop` to all buttons, chips, filter tabs, and picker items.
 
-- [ ] **Step 3: Ensure layout resilience for dynamic text scales**
+- [x] **Step 3: Ensure layout resilience for dynamic text scales**
   Ensure text wraps gracefully with `flexWrap`, `ScrollView`, and avoiding fixed-height containers that clip scaled fonts.
 
-- [ ] **Step 4: Add accessibility test assertions**
+- [x] **Step 4: Add accessibility test assertions**
   Add tests in `tests/accessibility.test.ts` ensuring critical components expose valid accessibility roles and labels.
 
-- [ ] **Step 5: Run tests and typecheck**
+- [x] **Step 5: Run tests and typecheck**
   Run: `bun test` and `npm run typecheck`.
 
 ---
@@ -221,16 +221,16 @@
 - Modify: `README.md`
 - Modify: `plan.md` (mark 0.4 progress)
 
-- [ ] **Step 1: Update version numbers**
+- [x] **Step 1: Update version numbers**
   Update version in `package.json` and `android/app/build.gradle`.
 
-- [ ] **Step 2: Write release notes**
+- [x] **Step 2: Write release notes**
   Create `release-notes/v0.4.0.md` detailing local backup & restore, versioned JSON format, atomic restore safety, Data tab, and accessibility improvements.
 
-- [ ] **Step 3: Update README and documentation**
+- [x] **Step 3: Update README and documentation**
   Update `README.md` with data management instructions and accessibility features.
 
-- [ ] **Step 4: Verify test suite, typecheck, and Android build**
+- [x] **Step 4: Verify test suite, typecheck, and Android build**
   Run full test suite: `bun test`
   Run typecheck: `npm run typecheck`
   Run Android build check if environment permits.
