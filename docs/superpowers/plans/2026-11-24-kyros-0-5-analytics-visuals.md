@@ -156,6 +156,6 @@
 ### Task 6: Published GitHub wiki review and verification — issue #45
 
 **Scope:**
-- Review existing GitHub wiki pages against Kyros 0.5.0 changes.
-- Update pages covering Analytics, Month Navigation, and CSV export.
-- Verify published wiki pages after release to `main`.
+- [x] Review existing GitHub wiki pages against Kyros 0.5.0 changes.
+- [x] Update pages covering Analytics, Month Navigation, and CSV export.
+- [x] Verify published wiki pages after release to `main`.
