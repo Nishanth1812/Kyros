@@ -44,19 +44,19 @@
 - `calculateMultiMonthTrends(transactions: Transaction[], monthsCount: number, referenceDate?: Date): MonthlyTrendDataPoint[]`
 - `formatTransactionsToCsv(transactions: Transaction[], categories: Category[]): string`
 
-- [ ] **Step 1: Write analytics engine unit tests**
+- [x] **Step 1: Write analytics engine unit tests**
   Add unit tests in `tests/analytics.test.ts` checking: correct month boundary filtering, category percentage breakdown summing to 100%, daily average spend calculation, empty month handling, and multi-month trend calculations.
 
-- [ ] **Step 2: Write CSV export unit tests**
+- [x] **Step 2: Write CSV export unit tests**
   Add unit tests in `tests/csvExport.test.ts` checking: header generation, row formatting with formatted rupee values, escaping descriptions containing commas/quotes/newlines, and category mapping.
 
-- [ ] **Step 3: Implement analytics calculation functions**
+- [x] **Step 3: Implement analytics calculation functions**
   Implement `src/lib/analytics.ts` with date navigation helpers, category breakdown aggregators, and multi-month trend computations.
 
-- [ ] **Step 4: Implement CSV serialization**
+- [x] **Step 4: Implement CSV serialization**
   Implement `src/lib/csvExport.ts` adhering to RFC 4180.
 
-- [ ] **Step 5: Run tests and typecheck**
+- [x] **Step 5: Run tests and typecheck**
   Run: `bun test tests/analytics.test.ts tests/csvExport.test.ts` and `npm run typecheck`.
 
 ---
