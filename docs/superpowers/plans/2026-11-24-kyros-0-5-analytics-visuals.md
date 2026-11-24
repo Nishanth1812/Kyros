@@ -72,16 +72,16 @@
 - `<CategoryBreakdownChart breakdown={CategorySpendingBreakdown[]} totalMinor={number} />`
 - `<MonthlyTrendChart trends={MonthlyTrendDataPoint[]} onSelectMonth?: (point: MonthlyTrendDataPoint) => void />`
 
-- [ ] **Step 1: Implement CategoryBreakdownChart**
+- [x] **Step 1: Implement CategoryBreakdownChart**
   Build horizontal proportional distribution bar with colored segments and an accessible list of ranked categories showing percentage and formatted amount. Ensure full screen reader accessibility.
 
-- [ ] **Step 2: Implement MonthlyTrendChart**
+- [x] **Step 2: Implement MonthlyTrendChart**
   Build 6-month paired bar chart (Income in green, Expense in red) with proportional heights, month labels, and tap/touch targets for each bar.
 
-- [ ] **Step 3: Add component tests**
+- [x] **Step 3: Add component tests**
   Add tests in `tests/chartComponents.test.ts` checking accessibility labels and proportional percentage calculations.
 
-- [ ] **Step 4: Run tests and typecheck**
+- [x] **Step 4: Run tests and typecheck**
   Run: `bun test tests/chartComponents.test.ts` and `npm run typecheck`.
 
 ---
