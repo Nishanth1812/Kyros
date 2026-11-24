@@ -95,19 +95,19 @@
 - Modify: `src/navigation/AppNavigator.tsx`
 - Create: `tests/monthNavigation.test.ts`
 
-- [ ] **Step 1: Add MonthSelector component / controls to Dashboard**
+- [x] **Step 1: Add MonthSelector component / controls to Dashboard**
   Add previous/next month controls to `DashboardScreen.tsx`. Update dashboard summaries and categories to reflect the selected month. Add a quick link to open full Analytics.
 
-- [ ] **Step 2: Implement AnalyticsScreen**
+- [x] **Step 2: Implement AnalyticsScreen**
   Build `AnalyticsScreen.tsx` featuring the 6-month trend chart, selected month deep dive (daily average, top category, savings rate), and the complete category breakdown chart.
 
-- [ ] **Step 3: Update Navigation**
+- [x] **Step 3: Update Navigation**
   Add `Analytics: undefined` route to navigation so users can navigate to the dedicated Analytics view.
 
-- [ ] **Step 4: Add month navigation tests**
+- [x] **Step 4: Add month navigation tests**
   Add unit tests in `tests/monthNavigation.test.ts` checking navigation bounds and date shifts.
 
-- [ ] **Step 5: Run tests and typecheck**
+- [x] **Step 5: Run tests and typecheck**
   Run: `bun test` and `npm run typecheck`.
 
 ---

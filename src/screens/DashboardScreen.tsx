@@ -1,13 +1,28 @@
 import { useMemo, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
+import CategoryBreakdownChart from '../components/CategoryBreakdownChart';
 import ScreenHeader from '../components/ScreenHeader';
 import { ErrorBanner, ErrorView, LoadingView } from '../components/StateViews';
-import { currentMonthBounds, currentMonthLabel } from '../lib/dates';
+import {
+  calculateMonthAnalytics,
+  getMonthScope,
+  shiftMonth,
+  type MonthScope,
+} from '../lib/analytics';
 import { formatMinorUnits } from '../lib/money';
 import { summarizeTransactions, type DashboardSummary } from '../lib/summaries';
 import { useTransactions } from '../state/TransactionsContext';
 import { colors, elevation, fontSize, radius, spacing } from '../theme/theme';
+import AnalyticsScreen from './AnalyticsScreen';
 
 function toMessage(error: unknown): string {
   return error instanceof Error && error.message
@@ -18,6 +33,10 @@ function toMessage(error: unknown): string {
 export default function DashboardScreen() {
   const { transactions, categories, status, error, refresh } = useTransactions();
   const [refreshing, setRefreshing] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(false);
+
+  const currentScope = getMonthScope(new Date());
+  const [selectedScope, setSelectedScope] = useState<MonthScope>(currentScope);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -28,11 +47,9 @@ export default function DashboardScreen() {
     }
   };
 
-  // Recomputed on each render so a refresh after midnight/month rollover uses
-  // the current local calendar. The data itself always comes from the context.
-  const now = new Date();
-  const bounds = currentMonthBounds(now);
-  const label = currentMonthLabel(now);
+  const isCurrentMonth =
+    selectedScope.year === currentScope.year && selectedScope.month === currentScope.month;
+
   const { summary, summaryError } = useMemo<{
     summary: DashboardSummary | null;
     summaryError: string | null;
@@ -42,15 +59,19 @@ export default function DashboardScreen() {
         summary: summarizeTransactions(
           transactions,
           categories,
-          bounds.dateFrom,
-          bounds.dateTo
+          selectedScope.dateFrom,
+          selectedScope.dateTo
         ),
         summaryError: null,
       };
     } catch (cause) {
       return { summary: null, summaryError: toMessage(cause) };
     }
-  }, [transactions, categories, bounds.dateFrom, bounds.dateTo]);
+  }, [transactions, categories, selectedScope.dateFrom, selectedScope.dateTo]);
+
+  const analytics = useMemo(() => {
+    return calculateMonthAnalytics(transactions, categories, selectedScope);
+  }, [transactions, categories, selectedScope]);
 
   return (
     <ScrollView
@@ -83,6 +104,7 @@ export default function DashboardScreen() {
           {summaryError ? <ErrorBanner message={summaryError} /> : null}
           {summary ? (
             <>
+              {/* Lifetime Net Balance Card */}
               <View
                 style={styles.balanceCard}
                 accessible
@@ -99,14 +121,62 @@ export default function DashboardScreen() {
                 </Text>
               </View>
 
-              <Text style={styles.sectionTitle} accessibilityRole="header">
-                {label}
-              </Text>
+              {/* Month Navigation Controls */}
+              <View style={styles.monthNav}>
+                <Pressable
+                  onPress={() => setSelectedScope((prev) => shiftMonth(prev, -1))}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel="Previous month"
+                  accessibilityHint="View summary for the previous month"
+                  style={({ pressed }) => [
+                    styles.navBtn,
+                    pressed ? styles.navBtnPressed : null,
+                  ]}
+                >
+                  <Text style={styles.navBtnText}>◀</Text>
+                </Pressable>
+
+                <View style={styles.monthCenter}>
+                  <Text style={styles.monthTitle}>{selectedScope.label}</Text>
+                  {!isCurrentMonth && (
+                    <Pressable
+                      onPress={() => setSelectedScope(currentScope)}
+                      accessible={true}
+                      accessibilityRole="button"
+                      accessibilityLabel="Reset to current month"
+                      style={styles.currentMonthBadge}
+                    >
+                      <Text style={styles.currentMonthBadgeText}>Return to Current</Text>
+                    </Pressable>
+                  )}
+                </View>
+
+                <Pressable
+                  onPress={() => setSelectedScope((prev) => shiftMonth(prev, 1))}
+                  disabled={isCurrentMonth}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel="Next month"
+                  accessibilityHint={isCurrentMonth ? 'Disabled, currently on latest month' : 'View summary for the next month'}
+                  style={({ pressed }) => [
+                    styles.navBtn,
+                    isCurrentMonth && styles.navBtnDisabled,
+                    pressed && !isCurrentMonth ? styles.navBtnPressed : null,
+                  ]}
+                >
+                  <Text style={[styles.navBtnText, isCurrentMonth && styles.navBtnTextDisabled]}>
+                    ▶
+                  </Text>
+                </Pressable>
+              </View>
+
+              {/* Monthly Income and Expense Metrics */}
               <View style={styles.card}>
                 <View
                   style={styles.metricRow}
                   accessible
-                  accessibilityLabel={`Income this month ${formatMinorUnits(
+                  accessibilityLabel={`Income for ${selectedScope.label} ${formatMinorUnits(
                     summary.periodIncomeMinor
                   )}`}
                 >
@@ -119,7 +189,7 @@ export default function DashboardScreen() {
                 <View
                   style={styles.metricRow}
                   accessible
-                  accessibilityLabel={`Expenses this month ${formatMinorUnits(
+                  accessibilityLabel={`Expenses for ${selectedScope.label} ${formatMinorUnits(
                     summary.periodExpenseMinor
                   )}`}
                 >
@@ -130,34 +200,34 @@ export default function DashboardScreen() {
                 </View>
               </View>
 
-              <Text style={styles.sectionTitle} accessibilityRole="header">
-                Expenses by category
-              </Text>
-              {summary.expenseByCategory.length === 0 ? (
-                <View style={styles.card}>
-                  <Text style={styles.emptyText}>
-                    No expenses recorded this month.
+              {/* Insights and Analytics Entry Point */}
+              <TouchableOpacity
+                style={styles.analyticsEntryCard}
+                onPress={() => setShowAnalytics(true)}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="Open financial analytics and spending trends"
+              >
+                <View style={styles.analyticsEntryLeft}>
+                  <Text style={styles.analyticsEntryTitle}>Insights & Multi-Month Trends</Text>
+                  <Text style={styles.analyticsEntrySubtitle}>
+                    Explore 6-month trends, daily spend, and savings rates
                   </Text>
                 </View>
-              ) : (
-                <View style={styles.card}>
-                  {summary.expenseByCategory.map((entry) => (
-                    <View
-                      key={entry.categoryId}
-                      style={styles.categoryRow}
-                      accessible
-                      accessibilityLabel={`${entry.categoryName}: ${formatMinorUnits(
-                        entry.amountMinor
-                      )}`}
-                    >
-                      <Text style={styles.categoryName}>{entry.categoryName}</Text>
-                      <Text style={styles.categoryAmount}>
-                        {formatMinorUnits(entry.amountMinor)}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              )}
+                <Text style={styles.analyticsEntryArrow}>➔</Text>
+              </TouchableOpacity>
+
+              {/* Category Spending Breakdown Section */}
+              <Text style={styles.sectionTitle} accessibilityRole="header">
+                Expenses by category ({selectedScope.label})
+              </Text>
+
+              <View style={styles.card}>
+                <CategoryBreakdownChart
+                  breakdown={analytics.categoryBreakdown}
+                  totalExpenseMinor={analytics.totalExpenseMinor}
+                />
+              </View>
 
               {transactions.length === 0 ? (
                 <Text style={styles.emptyHint}>
@@ -168,6 +238,15 @@ export default function DashboardScreen() {
           ) : null}
         </>
       ) : null}
+
+      {/* Analytics Modal */}
+      {showAnalytics && (
+        <AnalyticsScreen
+          visible={showAnalytics}
+          onClose={() => setShowAnalytics(false)}
+          initialScope={selectedScope}
+        />
+      )}
     </ScrollView>
   );
 }
@@ -178,58 +257,110 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   content: {
-    padding: spacing.lg,
+    padding: spacing.md,
     paddingBottom: spacing.xxl,
   },
   balanceCard: {
     backgroundColor: colors.primary,
     borderRadius: radius.lg,
-    padding: spacing.xl,
-    marginBottom: spacing.lg,
-    ...elevation,
-  },
-  cardLabel: {
-    fontSize: fontSize.small,
-    color: colors.onPrimary,
-    opacity: 0.85,
-  },
-  balanceValue: {
-    marginTop: spacing.xs,
-    fontSize: fontSize.title,
-    fontWeight: '700',
-    color: colors.onPrimary,
-  },
-  cardHint: {
-    marginTop: spacing.sm,
-    fontSize: fontSize.caption,
-    color: colors.onPrimary,
-    opacity: 0.8,
-  },
-  sectionTitle: {
-    marginTop: spacing.md,
-    marginBottom: spacing.sm,
-    fontSize: fontSize.label,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
+    padding: spacing.lg,
     marginBottom: spacing.md,
     ...elevation,
   },
-  metricRow: {
+  cardLabel: {
+    color: colors.onPrimary,
+    fontSize: fontSize.caption,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    opacity: 0.8,
+  },
+  balanceValue: {
+    color: colors.onPrimary,
+    fontSize: fontSize.title,
+    fontWeight: '700',
+    marginTop: spacing.xs,
+  },
+  cardHint: {
+    color: colors.onPrimary,
+    fontSize: fontSize.caption,
+    marginTop: spacing.xs,
+    opacity: 0.8,
+  },
+  monthNav: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    minHeight: 44,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    padding: spacing.xs,
+    marginBottom: spacing.md,
+    ...elevation,
+  },
+  navBtn: {
+    minHeight: 48,
+    minWidth: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.sm,
+  },
+  navBtnPressed: {
+    backgroundColor: colors.subtleGreen,
+  },
+  navBtnDisabled: {
+    opacity: 0.3,
+  },
+  navBtnText: {
+    fontSize: fontSize.body,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  navBtnTextDisabled: {
+    color: colors.textMuted,
+  },
+  monthCenter: {
+    alignItems: 'center',
+  },
+  monthTitle: {
+    fontSize: fontSize.body,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  currentMonthBadge: {
+    marginTop: 2,
+    backgroundColor: colors.subtleGreen,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radius.pill,
+  },
+  currentMonthBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    ...elevation,
+  },
+  sectionTitle: {
+    fontSize: fontSize.heading,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  metricRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing.xs,
+    minHeight: 36,
   },
   metricLabel: {
     fontSize: fontSize.body,
-    color: colors.text,
+    color: colors.textMuted,
   },
   metricValue: {
     fontSize: fontSize.heading,
@@ -246,31 +377,41 @@ const styles = StyleSheet.create({
     backgroundColor: colors.border,
     marginVertical: spacing.sm,
   },
-  categoryRow: {
+  analyticsEntryCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    minHeight: 44,
-    paddingVertical: spacing.xs,
+    backgroundColor: colors.subtleGreen,
+    borderColor: colors.primary,
+    borderWidth: 1,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    minHeight: 48,
+    marginBottom: spacing.md,
   },
-  categoryName: {
+  analyticsEntryLeft: {
     flex: 1,
-    fontSize: fontSize.body,
-    color: colors.text,
+    marginRight: spacing.sm,
   },
-  categoryAmount: {
+  analyticsEntryTitle: {
     fontSize: fontSize.body,
     fontWeight: '700',
-    color: colors.text,
+    color: colors.primary,
   },
-  emptyText: {
-    fontSize: fontSize.body,
+  analyticsEntrySubtitle: {
+    fontSize: fontSize.caption,
     color: colors.textMuted,
+    marginTop: 2,
+  },
+  analyticsEntryArrow: {
+    fontSize: fontSize.heading,
+    fontWeight: '700',
+    color: colors.primary,
   },
   emptyHint: {
-    marginTop: spacing.md,
-    fontSize: fontSize.small,
-    color: colors.textMuted,
     textAlign: 'center',
+    color: colors.textMuted,
+    fontSize: fontSize.small,
+    marginTop: spacing.md,
   },
 });
