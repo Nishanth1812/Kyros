@@ -1,27 +1,29 @@
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useNavigation } from '@react-navigation/native';
 import { ScrollView, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import ScreenHeader from '../components/ScreenHeader';
 import TransactionForm from '../components/TransactionForm';
 import type { RootTabParamList } from '../navigation/types';
 import { useTransactions } from '../state/TransactionsContext';
-import { useTheme, useThemedStyles } from '../theme/ThemeContext';
+import { useThemedStyles } from '../theme/ThemeContext';
 import { type ThemeColors, spacing } from '../theme/theme';
 
 type Navigation = BottomTabNavigationProp<RootTabParamList, 'Add'>;
 
 export default function AddTransactionScreen() {
   const styles = useThemedStyles(createStyles);
-  const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const { addTransaction, addCategory, activeCategories } = useTransactions();
   const navigation = useNavigation<Navigation>();
 
   return (
     <ScrollView
       style={styles.screen}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg }]}
       keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
     >
       <ScreenHeader
         title="New transaction"
@@ -42,10 +44,14 @@ export default function AddTransactionScreen() {
 const createStyles = (colors: ThemeColors) => StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#F4F7F4',
+    backgroundColor: colors.background,
   },
   content: {
-    padding: spacing.lg,
+    flexGrow: 1,
+    alignSelf: 'center',
+    width: '100%',
+    maxWidth: 720,
+    paddingHorizontal: spacing.md,
     paddingBottom: spacing.xxl,
   },
 });
