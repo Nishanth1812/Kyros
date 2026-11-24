@@ -132,15 +132,15 @@ function applyRecurringTransaction(
 - `test_apply_recurring_transaction_inserts_transaction_and_advances_due_date`
 - `test_recurring_storage_crud_persists_and_updates_timestamps`
 
-- [ ] **Step 1: Write recurring transactions unit tests**
+- [x] **Step 1: Write recurring transactions unit tests**
   Implement `tests/recurringTransactions.test.ts` covering date arithmetic, leap year logic, and storage operations.
-- [ ] **Step 2: Implement recurringStorage and recurringEngine**
+- [x] **Step 2: Implement recurringStorage and recurringEngine**
   Implement `src/storage/recurringStorage.ts` and `src/lib/recurringEngine.ts`.
-- [ ] **Step 3: Build RecurringTransactionsScreen**
+- [x] **Step 3: Build RecurringTransactionsScreen**
   Create `src/screens/RecurringTransactionsScreen.tsx` with frequency selectors, amount inputs in rupees/paise, and category pickers.
-- [ ] **Step 4: Build RecurringReviewBanner and integrate into Dashboard**
+- [x] **Step 4: Build RecurringReviewBanner and integrate into Dashboard**
   Implement `src/components/RecurringReviewBanner.tsx` with "Apply All" and "Review" actions; embed at top of `DashboardScreen.tsx`.
-- [ ] **Step 5: Run tests and typecheck**
+- [x] **Step 5: Run tests and typecheck**
   Run: `bun test tests/recurringTransactions.test.ts` and `npm run typecheck`.
 
 ---

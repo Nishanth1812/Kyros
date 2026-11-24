@@ -55,6 +55,7 @@ export interface Transaction {
   categoryId: number;
   /** Creation timestamp in milliseconds since epoch, used for stable ordering. */
   createdAt: number;
+  updatedAt?: number;
 }
 
 export interface NewTransactionInput {
@@ -139,6 +140,41 @@ export interface CategoryStorage {
     idToDelete: number,
     targetCategoryId: number
   ): Promise<{ reassignedCount: number }>;
+}
+
+export type RecurringFrequency = 'daily' | 'weekly' | 'monthly' | 'yearly';
+
+export interface RecurringTransaction {
+  id: number;
+  amountMinor: MinorUnits;
+  type: TransactionType;
+  categoryId: number;
+  description: string | null;
+  frequency: RecurringFrequency;
+  nextDueDate: string;
+  isActive: boolean;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface NewRecurringInput {
+  amountMinor: unknown;
+  type: unknown;
+  categoryId: unknown;
+  description?: unknown;
+  frequency: unknown;
+  nextDueDate: unknown;
+  isActive?: boolean;
+}
+
+export interface RecurringStorage {
+  initialize(): Promise<void>;
+  listRecurring(): Promise<RecurringTransaction[]>;
+  addRecurring(input: NewRecurringInput): Promise<RecurringTransaction>;
+  updateRecurring(id: number, input: Partial<NewRecurringInput>): Promise<RecurringTransaction>;
+  deleteRecurring(id: number): Promise<void>;
+  toggleRecurringActive(id: number, isActive: boolean): Promise<RecurringTransaction>;
+  applyRecurring(id: number, asOfDate?: string): Promise<{ transaction: Transaction; nextDueDate: string }>;
 }
 
 /**

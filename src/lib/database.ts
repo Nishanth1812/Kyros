@@ -3,9 +3,11 @@ import { NativeModules } from 'react-native';
 import {
   createBudgetStorage,
   createCategoryStorage,
+  createRecurringStorage,
   createTransactionStorage,
   type BudgetStorage,
   type CategoryStorage,
+  type RecurringStorage,
   type TransactionStorage,
 } from '../storage';
 import type { SQLiteDatabaseLike, SQLiteValue } from '../storage/types';
@@ -98,6 +100,24 @@ export function getCategoryStorage(): Promise<CategoryStorage> {
 }
 
 let budgetStoragePromise: Promise<BudgetStorage> | null = null;
+
+let recurringStoragePromise: Promise<RecurringStorage> | null = null;
+
+/** Lazily opens the same database and initializes recurring transactions storage. */
+export function getRecurringStorage(): Promise<RecurringStorage> {
+  if (!recurringStoragePromise) {
+    recurringStoragePromise = (async () => {
+      await getTransactionStorage();
+      const storage = createRecurringStorage(await getDatabase());
+      await storage.initialize();
+      return storage;
+    })().catch((error: unknown) => {
+      recurringStoragePromise = null;
+      throw error;
+    });
+  }
+  return recurringStoragePromise;
+}
 
 /** Lazily opens the same database after the schema has reached its latest version. */
 export function getBudgetStorage(): Promise<BudgetStorage> {

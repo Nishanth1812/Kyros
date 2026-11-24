@@ -23,6 +23,8 @@ import { summarizeTransactions, type DashboardSummary } from '../lib/summaries';
 import { useTransactions } from '../state/TransactionsContext';
 import { colors, elevation, fontSize, radius, spacing } from '../theme/theme';
 import AnalyticsScreen from './AnalyticsScreen';
+import RecurringTransactionsScreen from './RecurringTransactionsScreen';
+import RecurringReviewBanner from '../components/RecurringReviewBanner';
 
 function toMessage(error: unknown): string {
   return error instanceof Error && error.message
@@ -34,6 +36,7 @@ export default function DashboardScreen() {
   const { transactions, categories, status, error, refresh } = useTransactions();
   const [refreshing, setRefreshing] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showRecurring, setShowRecurring] = useState(false);
 
   const currentScope = getMonthScope(new Date());
   const [selectedScope, setSelectedScope] = useState<MonthScope>(currentScope);
@@ -73,6 +76,10 @@ export default function DashboardScreen() {
     return calculateMonthAnalytics(transactions, categories, selectedScope);
   }, [transactions, categories, selectedScope]);
 
+  if (showRecurring) {
+    return <RecurringTransactionsScreen onBack={() => setShowRecurring(false)} />;
+  }
+
   return (
     <ScrollView
       style={styles.screen}
@@ -104,6 +111,8 @@ export default function DashboardScreen() {
           {summaryError ? <ErrorBanner message={summaryError} /> : null}
           {summary ? (
             <>
+              <RecurringReviewBanner onReview={() => setShowRecurring(true)} />
+
               {/* Lifetime Net Balance Card */}
               <View
                 style={styles.balanceCard}

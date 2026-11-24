@@ -13,8 +13,10 @@ import {
   getBudgetStorage,
   getCategoryStorage,
   getDatabaseInstance,
+  getRecurringStorage,
   getTransactionStorage,
 } from '../lib/database';
+import { findDueRecurringTransactions } from '../lib/recurringEngine';
 import {
   exportBackupData,
   restoreBackupData,
@@ -23,7 +25,9 @@ import {
   type KyrosBackupV1,
   type NewBudgetInput,
   type NewCategoryInput,
+  type NewRecurringInput,
   type NewTransactionInput,
+  type RecurringTransaction,
   type RestoreResult,
   type Transaction,
 } from '../storage';
@@ -35,6 +39,8 @@ interface TransactionsContextValue {
   categories: Category[];
   activeCategories: Category[];
   budgets: Budget[];
+  recurring: RecurringTransaction[];
+  dueRecurring: RecurringTransaction[];
   status: LoadStatus;
   error: string | null;
   /** Re-read transactions, categories, and budgets without replacing lists with a loader. */
@@ -47,6 +53,12 @@ interface TransactionsContextValue {
   renameCategory: (id: number, newName: string) => Promise<Category>;
   archiveCategory: (id: number, isArchived: boolean) => Promise<Category>;
   deleteCategory: (idToDelete: number, targetCategoryId: number) => Promise<{ reassignedCount: number }>;
+  addRecurring: (input: NewRecurringInput) => Promise<RecurringTransaction>;
+  updateRecurring: (id: number, input: Partial<NewRecurringInput>) => Promise<RecurringTransaction>;
+  deleteRecurring: (id: number) => Promise<void>;
+  toggleRecurringActive: (id: number, isActive: boolean) => Promise<RecurringTransaction>;
+  applyRecurring: (id: number, asOfDate?: string) => Promise<{ transaction: Transaction; nextDueDate: string }>;
+  applyAllDueRecurring: () => Promise<number>;
   /** Creates or updates the limit for a scope, then refreshes the visible list. */
   saveBudget: (input: NewBudgetInput) => Promise<Budget>;
   /** Deletes the requested row if present; an unknown id is a no-op. */
@@ -67,6 +79,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [recurring, setRecurring] = useState<RecurringTransaction[]>([]);
   const [status, setStatus] = useState<LoadStatus>('loading');
   const [error, setError] = useState<string | null>(null);
   const hasLoaded = useRef(false);
@@ -75,20 +88,23 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
     if (!silent || !hasLoaded.current) setStatus('loading');
     setError(null);
     try {
-      const [transactionStorage, categoryStorage, budgetStorage] = await Promise.all([
+      const [transactionStorage, categoryStorage, budgetStorage, recurringStorage] = await Promise.all([
         getTransactionStorage(),
         getCategoryStorage(),
         getBudgetStorage(),
+        getRecurringStorage(),
       ]);
-      const [list, categoryList, budgetList] = await Promise.all([
+      const [list, categoryList, budgetList, recurringList] = await Promise.all([
         transactionStorage.listTransactions(),
         categoryStorage.listCategories(undefined, true),
         budgetStorage.listBudgets(),
+        recurringStorage.listRecurring(),
       ]);
       hasLoaded.current = true;
       setTransactions(list);
       setCategories(categoryList);
       setBudgets(budgetList);
+      setRecurring(recurringList);
       setStatus('ready');
     } catch (cause) {
       setError(toMessage(cause));
@@ -99,6 +115,12 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
   const activeCategories = useMemo(
     () => categories.filter((c) => !c.isArchived),
     [categories]
+  );
+
+  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const dueRecurring = useMemo(
+    () => findDueRecurringTransactions(recurring, todayStr),
+    [recurring, todayStr]
   );
 
   useEffect(() => {
@@ -185,6 +207,72 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
     [load]
   );
 
+  const addRecurring = useCallback(
+    async (input: NewRecurringInput) => {
+      const storage = await getRecurringStorage();
+      const created = await storage.addRecurring(input);
+      hasLoaded.current = true;
+      await load(true);
+      return created;
+    },
+    [load]
+  );
+
+  const updateRecurring = useCallback(
+    async (id: number, input: Partial<NewRecurringInput>) => {
+      const storage = await getRecurringStorage();
+      const updated = await storage.updateRecurring(id, input);
+      hasLoaded.current = true;
+      await load(true);
+      return updated;
+    },
+    [load]
+  );
+
+  const deleteRecurring = useCallback(
+    async (id: number) => {
+      const storage = await getRecurringStorage();
+      await storage.deleteRecurring(id);
+      hasLoaded.current = true;
+      await load(true);
+    },
+    [load]
+  );
+
+  const toggleRecurringActive = useCallback(
+    async (id: number, isActive: boolean) => {
+      const storage = await getRecurringStorage();
+      const updated = await storage.toggleRecurringActive(id, isActive);
+      hasLoaded.current = true;
+      await load(true);
+      return updated;
+    },
+    [load]
+  );
+
+  const applyRecurring = useCallback(
+    async (id: number, asOfDate?: string) => {
+      const storage = await getRecurringStorage();
+      const result = await storage.applyRecurring(id, asOfDate);
+      hasLoaded.current = true;
+      await load(true);
+      return result;
+    },
+    [load]
+  );
+
+  const applyAllDueRecurring = useCallback(async () => {
+    const storage = await getRecurringStorage();
+    let appliedCount = 0;
+    for (const item of dueRecurring) {
+      await storage.applyRecurring(item.id, item.nextDueDate);
+      appliedCount++;
+    }
+    hasLoaded.current = true;
+    await load(true);
+    return appliedCount;
+  }, [dueRecurring, load]);
+
   const saveBudget = useCallback(
     async (input: NewBudgetInput) => {
       const storage = await getBudgetStorage();
@@ -230,6 +318,8 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       categories,
       activeCategories,
       budgets,
+      recurring,
+      dueRecurring,
       status,
       error,
       refresh,
@@ -240,6 +330,12 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       renameCategory,
       archiveCategory,
       deleteCategory,
+      addRecurring,
+      updateRecurring,
+      deleteRecurring,
+      toggleRecurringActive,
+      applyRecurring,
+      applyAllDueRecurring,
       saveBudget,
       deleteBudget,
       exportBackup,
@@ -250,6 +346,8 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       categories,
       activeCategories,
       budgets,
+      recurring,
+      dueRecurring,
       status,
       error,
       refresh,
@@ -260,6 +358,12 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       renameCategory,
       archiveCategory,
       deleteCategory,
+      addRecurring,
+      updateRecurring,
+      deleteRecurring,
+      toggleRecurringActive,
+      applyRecurring,
+      applyAllDueRecurring,
       saveBudget,
       deleteBudget,
       exportBackup,

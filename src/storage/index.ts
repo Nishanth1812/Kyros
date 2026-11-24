@@ -1,6 +1,7 @@
 export { createTransactionStorage } from './transactionStorage';
 export { createCategoryStorage } from './categoryStorage';
 export { createBudgetStorage } from './budgetStorage';
+export { createRecurringStorage } from './recurringStorage';
 export { exportBackupData, restoreBackupData } from './backupStorage';
 export { validateBackupPayload } from './backupValidation';
 export { initializeSchema, SCHEMA_VERSION } from './schema';
@@ -47,4 +48,8 @@ export type {
   ValidationResult,
   SQLiteDatabaseLike,
   TransactionStorage,
+  RecurringTransaction,
+  NewRecurringInput,
+  RecurringFrequency,
+  RecurringStorage,
 } from './types';
