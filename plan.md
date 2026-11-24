@@ -129,7 +129,7 @@ while preserving the local-first SQLite foundation.
   and category analysis.
 - RFC 4180 CSV transaction export via Storage Access Framework.
 
-### 0.6 — Feature expansion and sync readiness (in progress)
+### 0.6 — Feature expansion and sync readiness (implemented; release pending)
 
 **Goal:** Expand local financial power with safe category management, recurring
 transaction schedules, savings goals with progress tracking, dynamic theme
@@ -147,15 +147,18 @@ engine that lays the offline-first cloud sync foundation.
   budgets.
 - Appearance & customization: system, dark, and light theme modes with WCAG AAA
   compliant high-contrast palettes; real-time history search and `#tag` filtering.
-- Cloud sync delta engine: SQLite schema v4 with `updated_at`, `is_archived`, and
-  a `deleted_tombstones` table to produce change deltas and resolve conflicts
-  offline-first.
+- Sync readiness: SQLite schema v4 with `updated_at`, `is_archived`, and
+  `deleted_tombstones`; export and apply local deltas with last-write-wins
+  conflict handling. No network transport or cloud account is included.
+- Backup V2: export category state, budgets, transactions, recurring schedules,
+  goals, and tombstones; restore V1 and V2 backups atomically.
 
 **Release checks:** Verify v3-to-v4 schema migration preserves all existing data;
-verify category deletion reassigns all linked transactions atomically; verify
-recurring transactions compute due dates and apply accurately; verify savings goals
-update progress correctly; test light/dark theme switching across all screens; and
-confirm the sync delta engine generates and applies delta payloads without data loss.
+verify category deletion reassigns linked transactions and recurring schedules
+atomically; verify recurring dates and exact paise amounts; verify goal
+contributions and concurrent updates; test system/light/dark themes across screens;
+restore V1 and V2 backups; and confirm local deltas preserve newer edits and apply
+tombstones without data loss.
 
 ### 0.7 and later — Connected cloud services and multi-device sync
 

@@ -1,6 +1,6 @@
-# Android Release Guidance — Kyros 0.3
+# Android Release Guidance — Kyros 0.6.0
 
-This document describes how to produce a **signed** release build of Kyros 0.3 and
+This document describes how to produce a **signed** release build of Kyros 0.6.0 and
 how to install and upgrade it. Kyros uses React Native and the Android Gradle
 wrapper in `android/`. GitHub Actions builds and verifies signed APKs on pushes
 to `main` (§9).
@@ -100,9 +100,9 @@ Test-Path $env:KYROS_RELEASE_STORE_FILE   # must be True
 CI computes the release version and `versionCode` for each new release from
 `main` (§9). To change the source version, update `package.json` and
 `android/app/build.gradle` together. Keep Android API 24 as the minimum. The
-0.3 source base is version `0.3.0` with base `versionCode` 5; the latest published
-tag is v0.2.0 (code 5). CI publishes v0.3.0 as versionCode 6 (the source base
-plus one).
+current source base is version `0.6.0` with `versionCode` 9. CI derives the
+published version from the release tags; the source values identify the release
+line and are not changed by the workflow.
 
 ## 4. Build the release APK
 
@@ -171,12 +171,14 @@ Get-ChildItem Env:KYROS_RELEASE_* | Remove-Item
 - **Same key is mandatory.** PackageManager only applies an update when the new
   APK is signed with the same key as the installed one. Reuse the §1 keystore
   for every release.
-- **Upgrade test (0.2 → 0.3):** install a 0.2.0 release with representative
-  income, expense, and category data, then install 0.3.0 signed with the same
-  key. Reopen the app and confirm every transaction and category is unchanged
-  after the v2-to-v3 migration (§7). Set an overall limit and a category limit,
-  add expenses dated in the current month, and compare Budgets progress against
-  History; income is excluded and over-budget amounts are exact.
+- **Upgrade test (0.5 → 0.6):** install the previous release with transactions,
+  categories, and budgets, then install 0.6.0 signed with the same key. Confirm
+  the v3-to-v4 migration preserves existing data. Check category reassignment,
+  recurring schedules, goals, theme persistence, History search, and budget
+  thresholds against saved data.
+- **Backup compatibility:** restore a V1 backup from an earlier release and a
+  V2 backup containing goals, schedules, and tombstones. Confirm restore replaces
+  all synchronized tables atomically and leaves valid category references.
 - **Older upgrade test (0.1 → 0.2):** install a 0.1.x release, add income and
   expense entries, then install 0.2.0 signed with the same key; confirm the
   entries are present, ordered, and assigned to the matching type's `Other`
@@ -185,20 +187,18 @@ Get-ChildItem Env:KYROS_RELEASE_* | Remove-Item
 - **Debug vs release:** the debug key cannot overwrite a release-signed install
   (or vice versa). Test upgrades only with release-signed APKs.
 - **If the keystore is lost:** you cannot sign an APK that upgrades the existing
-  install. Recovery is uninstall/reinstall, which deletes the SQLite data in all
-  local releases so far — there is no backup/restore yet.
+  install. Recovery is uninstall/reinstall, which deletes the SQLite data. Export
+  a local backup first and keep the signing key backed up outside the repository.
 
 ## 7. Database compatibility
 
-Android opens the existing `files/SQLite/kyros.sqlite` database in place. A v1
-database is migrated to v2 in one transaction: it creates and seeds `categories`,
-adds a required `category_id` to transactions (mapping existing rows to the
-matching type's `Other`), and sets `user_version` to 2. Kyros 0.3 then migrates v2
-to v3 in the same transaction: it creates the `budgets` table and its unique
-scope index, without changing any transaction or category row, and only then sets
-`user_version` to 3. Fresh installs create v3 directly. If any step fails, the
-original tables, rows, and version are left intact. Include income and expense
-entries created by the previous app in the upgrade check (§6).
+Android opens the existing `files/SQLite/kyros.sqlite` database in place. The
+v3-to-v4 migration adds revision timestamps and category archival, creates
+recurring schedules, savings goals, and tombstones, and updates `user_version`
+in one transaction. Fresh installs create the current schema directly. Earlier
+v1-to-v2 and v2-to-v3 migrations preserve existing transactions and categories.
+If a migration fails, the previous tables, rows, and version remain intact.
+Include representative data from the previous app in the upgrade check (§6).
 
 ## 8. Security summary
 
