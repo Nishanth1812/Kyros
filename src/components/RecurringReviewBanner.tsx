@@ -69,7 +69,7 @@ export default function RecurringReviewBanner({ onReview }: RecurringReviewBanne
           accessibilityLabel="Apply all due recurring transactions"
         >
           {isApplying ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
+            <ActivityIndicator size="small" color={colors.text} />
           ) : (
             <Text style={styles.applyButtonText}>Apply All</Text>
           )}
@@ -92,22 +92,22 @@ export default function RecurringReviewBanner({ onReview }: RecurringReviewBanne
 
 const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
-    backgroundColor: '#FEF3C7',
+    backgroundColor: colors.subtleWarning,
     borderWidth: 1,
-    borderColor: '#FCD34D',
+    borderColor: colors.warning,
     borderRadius: radius.md,
     padding: spacing.md,
     marginBottom: spacing.md,
     ...elevation,
   },
   successContainer: {
-    backgroundColor: '#DCFCE7',
-    borderColor: '#86EFAC',
+    backgroundColor: colors.subtleGreen,
+    borderColor: colors.income,
   },
   successText: {
     fontSize: fontSize.body,
     fontWeight: '700',
-    color: '#15803D',
+    color: colors.income,
     textAlign: 'center',
     paddingVertical: spacing.xs,
   },
@@ -118,8 +118,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: spacing.xs,
   },
   badge: {
-    backgroundColor: '#D97706',
-    color: '#FFFFFF',
+    backgroundColor: colors.subtleWarning,
+    color: colors.text,
     fontSize: 10,
     fontWeight: '800',
     paddingHorizontal: spacing.xs,
@@ -130,12 +130,12 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   title: {
     fontSize: fontSize.body,
     fontWeight: '700',
-    color: '#92400E',
+    color: colors.text,
   },
   amountText: {
     fontSize: fontSize.body,
     fontWeight: '600',
-    color: '#78350F',
+    color: colors.textSecondary,
     marginBottom: spacing.sm,
   },
   actionsRow: {
@@ -145,14 +145,16 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   applyButton: {
     flex: 1,
     minHeight: 48,
-    backgroundColor: '#D97706',
+    backgroundColor: colors.subtleWarning,
+    borderWidth: 1,
+    borderColor: colors.warning,
     borderRadius: radius.md,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: spacing.md,
   },
   applyButtonText: {
-    color: '#FFFFFF',
+    color: colors.text,
     fontSize: fontSize.caption,
     fontWeight: '700',
   },
@@ -161,13 +163,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingHorizontal: spacing.lg,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#FCD34D',
+    borderColor: colors.warning,
     borderRadius: radius.md,
     justifyContent: 'center',
     alignItems: 'center',
   },
   reviewButtonText: {
-    color: '#92400E',
+    color: colors.text,
     fontSize: fontSize.caption,
     fontWeight: '700',
   },

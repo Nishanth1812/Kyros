@@ -8,6 +8,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import BudgetForm from '../components/BudgetForm';
 import ScreenHeader from '../components/ScreenHeader';
@@ -21,12 +22,10 @@ import { currentMonthBounds, currentMonthLabel } from '../lib/dates';
 import { formatMinorUnits } from '../lib/money';
 import type { Budget, NewBudgetInput } from '../storage';
 import { useTransactions } from '../state/TransactionsContext';
+import { responsivePageContentStyle } from '../theme/layout';
 import { useTheme, useThemedStyles } from '../theme/ThemeContext';
 import { type ThemeColors, elevation, fontSize, radius, spacing } from '../theme/theme';
 import FinancialGoalsScreen from './FinancialGoalsScreen';
-
-const WARNING_COLOR = '#F59E0B';
-const DANGER_COLOR = '#EF4444';
 
 function toMessage(error: unknown): string {
   return error instanceof Error && error.message
@@ -113,6 +112,7 @@ interface EditingScope {
 
 export default function BudgetsScreen() {
   const styles = useThemedStyles(createStyles);
+  const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const {
     budgets,
@@ -253,7 +253,7 @@ export default function BudgetsScreen() {
   return (
     <ScrollView
       style={styles.screen}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[responsivePageContentStyle, { paddingTop: insets.top + spacing.lg }]}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -462,10 +462,6 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  content: {
-    padding: spacing.lg,
-    paddingBottom: spacing.xxl,
-  },
   goalsCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -610,10 +606,10 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.primary,
   },
   progressFillWarning: {
-    backgroundColor: WARNING_COLOR,
+    backgroundColor: colors.warning,
   },
   progressFillDanger: {
-    backgroundColor: DANGER_COLOR,
+    backgroundColor: colors.expense,
   },
   progressStatus: {
     marginTop: spacing.xs,
@@ -630,19 +626,19 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   statusBadgeWarning: {
-    backgroundColor: '#FEF3C7',
-    borderColor: WARNING_COLOR,
+    backgroundColor: colors.subtleWarning,
+    borderColor: colors.warning,
   },
   statusBadgeDanger: {
     backgroundColor: colors.subtleRed,
-    borderColor: DANGER_COLOR,
+    borderColor: colors.expense,
   },
   statusBadgeText: {
     fontSize: fontSize.small,
     fontWeight: '700',
   },
   statusBadgeTextWarning: {
-    color: '#B45309',
+    color: colors.text,
   },
   statusBadgeTextDanger: {
     color: colors.danger,

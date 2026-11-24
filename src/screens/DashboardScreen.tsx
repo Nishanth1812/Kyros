@@ -22,6 +22,7 @@ import {
 import { formatMinorUnits } from '../lib/money';
 import { summarizeTransactions, type DashboardSummary } from '../lib/summaries';
 import { useTransactions } from '../state/TransactionsContext';
+import { responsivePageContentStyle } from '../theme/layout';
 import { useTheme, useThemedStyles } from '../theme/ThemeContext';
 import { type ThemeColors, elevation, fontSize, radius, spacing } from '../theme/theme';
 import AnalyticsScreen from './AnalyticsScreen';
@@ -88,7 +89,7 @@ export default function DashboardScreen() {
   return (
     <ScrollView
       style={styles.screen}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.md }]}
+      contentContainerStyle={[responsivePageContentStyle, { paddingTop: insets.top + spacing.md }]}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -269,14 +270,6 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,
-  },
-  content: {
-    flexGrow: 1,
-    alignSelf: 'center',
-    width: '100%',
-    maxWidth: 760,
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.xxl,
   },
   balanceCard: {
     backgroundColor: colors.primary,

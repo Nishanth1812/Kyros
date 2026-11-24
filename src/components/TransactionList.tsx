@@ -1,6 +1,7 @@
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 
 import type { Transaction } from '../storage';
+import { responsivePageWidthStyle } from '../theme/layout';
 import { useTheme, useThemedStyles } from '../theme/ThemeContext';
 import { type ThemeColors, spacing } from '../theme/theme';
 import TransactionRow from './TransactionRow';
@@ -44,7 +45,8 @@ export default function TransactionList({
 
 const createStyles = (colors: ThemeColors) => StyleSheet.create({
   content: {
-    paddingHorizontal: spacing.lg,
+    ...responsivePageWidthStyle,
+    paddingHorizontal: spacing.md,
     paddingBottom: spacing.xxl,
   },
   separator: {

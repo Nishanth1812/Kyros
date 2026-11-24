@@ -28,6 +28,7 @@ export interface ThemeColors {
   onPrimary: string;
   subtleGreen: string;
   subtleRed: string;
+  subtleWarning: string;
   errorBackground: string;
   accent: string;
   primaryDark: string;
@@ -66,6 +67,7 @@ export const lightColors: ThemeColors = {
   onPrimary: '#FFFFFF',
   subtleGreen: '#E7F2EB',
   subtleRed: '#FBEDEA',
+  subtleWarning: '#FEF3C7',
   errorBackground: '#FBEDEA',
   accent: '#D97706',
   primaryDark: '#1D4ED8',
@@ -109,6 +111,7 @@ export const darkColors: ThemeColors = {
   onPrimary: '#0F172A',
   subtleGreen: '#12283D',
   subtleRed: '#3B1418',
+  subtleWarning: '#3B2D14',
   errorBackground: '#3B1418',
   accent: '#F59E0B',
   primaryDark: '#93C5FD',

@@ -10,12 +10,14 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import ScreenHeader from '../components/ScreenHeader';
 import { formatMinorUnits, parseAmountToMinorUnits } from '../lib/money';
 import { formatFrequency } from '../lib/recurringEngine';
 import { useTransactions } from '../state/TransactionsContext';
 import type { RecurringFrequency, RecurringTransaction, TransactionType } from '../storage/types';
+import { responsivePageContentStyle } from '../theme/layout';
 import { useTheme, useThemedStyles } from '../theme/ThemeContext';
 import { type ThemeColors, elevation, fontSize, radius, spacing } from '../theme/theme';
 
@@ -27,6 +29,7 @@ const FREQUENCIES: RecurringFrequency[] = ['daily', 'weekly', 'monthly', 'yearly
 
 export default function RecurringTransactionsScreen({ onBack }: RecurringTransactionsScreenProps) {
   const styles = useThemedStyles(createStyles);
+  const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const { recurring, activeCategories, addRecurring, deleteRecurring, toggleRecurringActive, applyRecurring } =
     useTransactions();
@@ -144,7 +147,10 @@ export default function RecurringTransactionsScreen({ onBack }: RecurringTransac
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[responsivePageContentStyle, { paddingTop: insets.top + spacing.md }]}
+    >
       {onBack && (
         <TouchableOpacity
           style={styles.backButton}
@@ -376,11 +382,7 @@ export default function RecurringTransactionsScreen({ onBack }: RecurringTransac
 const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
-  },
-  content: {
-    padding: spacing.lg,
-    paddingBottom: spacing.xxl * 2,
+    backgroundColor: colors.background,
   },
   backButton: {
     alignSelf: 'flex-start',
@@ -407,7 +409,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   createButtonText: {
     fontSize: fontSize.body,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: colors.onPrimary,
   },
   emptyCard: {
     backgroundColor: colors.surface,
@@ -471,12 +473,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   badgesRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
     gap: spacing.sm,
     marginVertical: spacing.sm,
   },
   frequencyBadge: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: colors.subtleGreen,
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
     borderRadius: radius.sm,
@@ -496,15 +499,15 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontWeight: '700',
   },
   activeBadge: {
-    backgroundColor: '#DCFCE7',
+    backgroundColor: colors.subtleGreen,
   },
   activeBadgeText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#15803D',
+    color: colors.income,
   },
   pausedBadge: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: colors.surfaceElevated,
   },
   pausedBadgeText: {
     fontSize: 11,
@@ -518,6 +521,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   cardActionsRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.sm,
     marginTop: spacing.sm,
     borderTopWidth: 1,
@@ -533,15 +537,17 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingHorizontal: spacing.sm,
   },
   applyBtn: {
-    backgroundColor: '#D97706',
+    backgroundColor: colors.subtleWarning,
+    borderWidth: 1,
+    borderColor: colors.warning,
   },
   applyBtnText: {
-    color: '#FFFFFF',
+    color: colors.text,
     fontSize: fontSize.caption,
     fontWeight: '700',
   },
   secondaryBtn: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: colors.surfaceElevated,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -551,9 +557,9 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontWeight: '600',
   },
   dangerBtn: {
-    backgroundColor: '#FEE2E2',
+    backgroundColor: colors.subtleRed,
     borderWidth: 1,
-    borderColor: '#FCA5A5',
+    borderColor: colors.expense,
   },
   dangerBtnText: {
     color: colors.expense,
@@ -593,7 +599,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: radius.md,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: colors.surfaceElevated,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -607,7 +613,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.textMuted,
   },
   typeSelectTextActive: {
-    color: '#FFFFFF',
+    color: colors.onPrimary,
     fontWeight: '700',
   },
   fieldLabel: {
@@ -638,7 +644,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: radius.md,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: colors.surfaceElevated,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -652,7 +658,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontWeight: '600',
   },
   freqChipTextActive: {
-    color: '#FFFFFF',
+    color: colors.onPrimary,
     fontWeight: '700',
   },
   categoryPickerRow: {
@@ -667,12 +673,12 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: radius.md,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: colors.surfaceElevated,
     borderWidth: 1,
     borderColor: colors.border,
   },
   categoryChipActive: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: colors.subtleGreen,
     borderColor: colors.primary,
   },
   categoryChipText: {
@@ -703,7 +709,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: radius.md,
   },
   modalCancelBtn: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: colors.surfaceElevated,
   },
   modalCancelBtnText: {
     fontSize: fontSize.body,
@@ -716,6 +722,6 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   modalSaveBtnText: {
     fontSize: fontSize.body,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: colors.onPrimary,
   },
 });

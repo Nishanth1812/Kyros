@@ -7,6 +7,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import CategoryBreakdownChart from '../components/CategoryBreakdownChart';
 import MonthlyTrendChart from '../components/MonthlyTrendChart';
@@ -19,6 +20,7 @@ import {
 } from '../lib/analytics';
 import { formatMinorUnits } from '../lib/money';
 import { useTransactions } from '../state/TransactionsContext';
+import { responsivePageContentStyle, responsivePageWidthStyle } from '../theme/layout';
 import { useTheme, useThemedStyles } from '../theme/ThemeContext';
 import { type ThemeColors, elevation, fontSize, radius, spacing } from '../theme/theme';
 
@@ -34,6 +36,7 @@ export default function AnalyticsScreen({
   initialScope,
 }: AnalyticsScreenProps) {
   const styles = useThemedStyles(createStyles);
+  const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const { transactions, categories } = useTransactions();
   const currentScope = getMonthScope(new Date());
@@ -47,7 +50,7 @@ export default function AnalyticsScreen({
   const content = (
     <View style={styles.screen}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
         <View style={styles.headerTextContainer}>
           <Text style={styles.title} accessibilityRole="header">
             Financial Analytics
@@ -72,7 +75,7 @@ export default function AnalyticsScreen({
 
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[responsivePageContentStyle, { paddingTop: spacing.md }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Month Selector Bar */}
@@ -214,11 +217,11 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: {
+    ...responsivePageWidthStyle,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
     paddingBottom: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
@@ -255,10 +258,6 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   scroll: {
     flex: 1,
-  },
-  content: {
-    padding: spacing.md,
-    paddingBottom: spacing.xxl,
   },
   monthNavCard: {
     flexDirection: 'row',

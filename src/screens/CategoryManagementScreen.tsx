@@ -10,9 +10,11 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import ScreenHeader from '../components/ScreenHeader';
 import { useTransactions } from '../state/TransactionsContext';
+import { responsivePageContentStyle } from '../theme/layout';
 import type { Category, TransactionType } from '../storage/types';
 import { useTheme, useThemedStyles } from '../theme/ThemeContext';
 import { type ThemeColors, elevation, fontSize, radius, spacing } from '../theme/theme';
@@ -23,6 +25,7 @@ interface CategoryManagementScreenProps {
 
 export default function CategoryManagementScreen({ onBack }: CategoryManagementScreenProps) {
   const styles = useThemedStyles(createStyles);
+  const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const { categories, transactions, renameCategory, archiveCategory, deleteCategory, addCategory } =
     useTransactions();
@@ -141,7 +144,10 @@ export default function CategoryManagementScreen({ onBack }: CategoryManagementS
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[responsivePageContentStyle, { paddingTop: insets.top + spacing.md }]}
+    >
       {onBack && (
         <TouchableOpacity
           style={styles.backButton}
@@ -406,11 +412,7 @@ export default function CategoryManagementScreen({ onBack }: CategoryManagementS
 const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
-  },
-  content: {
-    padding: spacing.lg,
-    paddingBottom: spacing.xxl * 2,
+    backgroundColor: colors.background,
   },
   backButton: {
     alignSelf: 'flex-start',
@@ -450,7 +452,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.textMuted,
   },
   typeChipTextActive: {
-    color: '#FFFFFF',
+    color: colors.onPrimary,
     fontWeight: '700',
   },
   addButton: {
@@ -504,26 +506,27 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingHorizontal: spacing.xs,
     paddingVertical: 2,
     borderRadius: radius.sm,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: colors.surfaceElevated,
   },
   builtinBadgeText: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#475569',
+    color: colors.textSecondary,
   },
   archivedBadge: {
     paddingHorizontal: spacing.xs,
     paddingVertical: 2,
     borderRadius: radius.sm,
-    backgroundColor: '#FEF3C7',
+    backgroundColor: colors.subtleWarning,
   },
   archivedBadgeText: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#D97706',
+    color: colors.text,
   },
   actionsRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.sm,
     marginTop: spacing.sm,
   },
@@ -534,7 +537,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: radius.md,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: colors.surfaceElevated,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -544,16 +547,16 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.text,
   },
   archiveBtn: {
-    backgroundColor: '#FEF3C7',
-    borderColor: '#FCD34D',
+    backgroundColor: colors.subtleWarning,
+    borderColor: colors.warning,
   },
   unarchiveBtn: {
-    backgroundColor: '#DCFCE7',
-    borderColor: '#86EFAC',
+    backgroundColor: colors.subtleGreen,
+    borderColor: colors.income,
   },
   deleteBtn: {
-    backgroundColor: '#FEE2E2',
-    borderColor: '#FCA5A5',
+    backgroundColor: colors.subtleRed,
+    borderColor: colors.expense,
   },
   deleteBtnText: {
     color: colors.expense,
@@ -609,7 +612,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderBottomColor: colors.border,
   },
   pickerItemActive: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: colors.subtleGreen,
   },
   pickerItemText: {
     fontSize: fontSize.body,
@@ -639,7 +642,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: radius.md,
   },
   cancelBtn: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: colors.surfaceElevated,
   },
   cancelBtnText: {
     fontSize: fontSize.body,
@@ -652,7 +655,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   saveBtnText: {
     fontSize: fontSize.body,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: colors.onPrimary,
   },
   dangerBtn: {
     backgroundColor: colors.expense,
@@ -660,6 +663,6 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   dangerBtnText: {
     fontSize: fontSize.body,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: colors.onPrimary,
   },
 });

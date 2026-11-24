@@ -10,6 +10,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import EditTransactionModal from '../components/EditTransactionModal';
 import ScreenHeader from '../components/ScreenHeader';
@@ -34,6 +35,7 @@ import {
 import type { RootTabParamList } from '../navigation/types';
 import type { NewTransactionInput, Transaction } from '../storage';
 import { useTransactions } from '../state/TransactionsContext';
+import { responsivePageWidthStyle } from '../theme/layout';
 import { useTheme, useThemedStyles } from '../theme/ThemeContext';
 import { type ThemeColors, fontSize, radius, spacing } from '../theme/theme';
 
@@ -71,6 +73,7 @@ export default function HistoryScreen() {
   } = useTransactions();
   const navigation = useNavigation<Navigation>();
   const styles = useThemedStyles(createStyles);
+  const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const [refreshing, setRefreshing] = useState(false);
   const [filters, setFilters] = useState<TransactionFilters>({});
@@ -192,7 +195,7 @@ export default function HistoryScreen() {
 
   return (
     <View style={styles.screen}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
         <ScreenHeader
           title="History"
           subtitle={
@@ -359,13 +362,15 @@ const createStyles = (colors: ThemeColors) =>
       backgroundColor: colors.background,
     },
     header: {
-      paddingHorizontal: spacing.lg,
-      paddingTop: spacing.lg,
+      ...responsivePageWidthStyle,
+      paddingHorizontal: spacing.md,
+      paddingBottom: spacing.sm,
     },
     searchRow: {
+      ...responsivePageWidthStyle,
       flexDirection: 'row',
       alignItems: 'center',
-      marginHorizontal: spacing.lg,
+      paddingHorizontal: spacing.md,
       marginBottom: spacing.md,
     },
     searchInput: {
@@ -396,8 +401,9 @@ const createStyles = (colors: ThemeColors) =>
       color: colors.textSecondary,
     },
     tagScroll: {
+      ...responsivePageWidthStyle,
       flexGrow: 0,
-      marginHorizontal: spacing.lg,
+      paddingHorizontal: spacing.md,
       marginBottom: spacing.md,
     },
     tagScrollContent: {
