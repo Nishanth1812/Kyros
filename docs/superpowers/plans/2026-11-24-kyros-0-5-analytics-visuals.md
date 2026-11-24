@@ -28,7 +28,7 @@
 
 ---
 
-### Task 1: Analytics aggregation engine and CSV serialization
+### Task 1: Analytics aggregation engine and CSV serialization — issue #40
 
 **Files:**
 - Create: `src/lib/analytics.ts`
@@ -61,7 +61,7 @@
 
 ---
 
-### Task 2: Accessible visual chart components
+### Task 2: Accessible visual chart components — issue #41
 
 **Files:**
 - Create: `src/components/CategoryBreakdownChart.tsx`
@@ -86,7 +86,7 @@
 
 ---
 
-### Task 3: Month navigation on Dashboard and dedicated Analytics screen
+### Task 3: Month navigation on Dashboard and dedicated Analytics screen — issue #42
 
 **Files:**
 - Create: `src/screens/AnalyticsScreen.tsx`
@@ -112,7 +112,7 @@
 
 ---
 
-### Task 4: CSV Export flow in Data tab
+### Task 4: CSV Export flow in Data tab — issue #43
 
 **Files:**
 - Modify: `src/screens/DataManagementScreen.tsx`
@@ -129,7 +129,7 @@
 
 ---
 
-### Task 5: Release preparation, documentation, and build checks
+### Task 5: Release preparation, documentation, and build checks — issue #44
 
 **Files:**
 - Modify: `package.json` (bump version to 0.5.0)
@@ -153,7 +153,7 @@
 
 ---
 
-### Task 6: Published GitHub wiki review and verification
+### Task 6: Published GitHub wiki review and verification — issue #45
 
 **Scope:**
 - Review existing GitHub wiki pages against Kyros 0.5.0 changes.
