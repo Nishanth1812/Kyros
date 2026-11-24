@@ -44,7 +44,7 @@ describe('validateBackupPayload', () => {
 
   it('accepts a valid KyrosBackupV1 payload', () => {
     const validated = validateBackupPayload(validPayload);
-    expect(validated.meta.version).toBe(1);
+    expect(validated.meta.version).toBe(2);
     expect(validated.data.categories.length).toBe(3);
     expect(validated.data.transactions.length).toBe(2);
     expect(validated.data.budgets.length).toBe(2);
@@ -53,7 +53,7 @@ describe('validateBackupPayload', () => {
   it('accepts valid payload when parsed from JSON string', () => {
     const jsonStr = JSON.stringify(validPayload);
     const validated = validateBackupPayload(jsonStr);
-    expect(validated.meta.version).toBe(1);
+    expect(validated.meta.version).toBe(2);
   });
 
   it('rejects non-object or malformed JSON payloads', () => {
@@ -64,7 +64,7 @@ describe('validateBackupPayload', () => {
   });
 
   it('rejects unsupported or missing schema version', () => {
-    const badVersion = { ...validPayload, meta: { ...validPayload.meta, version: 2 } };
+    const badVersion = { ...validPayload, meta: { ...validPayload.meta, version: 3 } };
     expect(() => validateBackupPayload(badVersion)).toThrow('Unsupported backup version');
 
     const missingMeta = { data: validPayload.data };
@@ -224,5 +224,30 @@ describe('validateBackupPayload', () => {
       },
     };
     expect(() => validateBackupPayload(incomeBudget)).toThrow('income category');
+  });
+
+  it('rejects goal savings above the supported paise limit', () => {
+    const payloadV2 = {
+      ...validPayload,
+      meta: { ...validPayload.meta, version: 2 },
+      data: {
+        ...validPayload.data,
+        recurring: [],
+        goals: [
+          {
+            id: 1,
+            title: 'Emergency fund',
+            targetAmountMinor: 1000,
+            currentSavedMinor: Number.MAX_SAFE_INTEGER + 1,
+            targetDate: null,
+            status: 'active',
+            createdAt: 1700000000000,
+            updatedAt: 1700000000000,
+          },
+        ],
+        tombstones: [],
+      },
+    };
+    expect(() => validateBackupPayload(payloadV2)).toThrow('currentSavedMinor');
   });
 });

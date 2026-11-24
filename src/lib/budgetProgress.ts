@@ -10,6 +10,51 @@ export interface BudgetProgress {
   remainingMinor: number;
 }
 
+export type BudgetThresholdStatus = 'normal' | 'warning' | 'danger';
+
+export interface BudgetThreshold {
+  status: BudgetThresholdStatus;
+  /** Whole-percent utilisation, rounded down. Unbounded above 100. */
+  percentUsed: number;
+  /** Amount over the limit in paise; 0 while still within budget. */
+  overspentMinor: number;
+}
+
+/**
+ * Classify a saved limit: below 80% is normal, 80% up to (but not including)
+ * the limit is a warning, and spending at or above the limit is danger. The
+ * comparison uses a ratio rather than money arithmetic, so no rounding reaches
+ * the paise amounts.
+ */
+export function getBudgetThreshold(
+  progress: Pick<BudgetProgress, 'budgetMinor' | 'spentMinor'>
+): BudgetThreshold {
+  const { budgetMinor, spentMinor } = progress;
+
+  if (budgetMinor <= 0) {
+    const overspentMinor = Math.max(0, spentMinor);
+    return {
+      status: overspentMinor > 0 ? 'danger' : 'normal',
+      percentUsed: 0,
+      overspentMinor,
+    };
+  }
+
+  const percentUsed = Math.floor((spentMinor / budgetMinor) * 100);
+  let status: BudgetThresholdStatus = 'normal';
+  if (spentMinor >= budgetMinor) {
+    status = 'danger';
+  } else if (spentMinor / budgetMinor >= 0.8) {
+    status = 'warning';
+  }
+
+  return {
+    status,
+    percentUsed,
+    overspentMinor: Math.max(0, spentMinor - budgetMinor),
+  };
+}
+
 /** Add integer minor units, failing loudly rather than returning a rounded total. */
 function checkedAdd(left: number, right: number): number {
   const sum = left + right;

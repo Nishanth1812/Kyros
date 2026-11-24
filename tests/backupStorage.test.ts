@@ -45,8 +45,8 @@ describe('backupStorage', () => {
 
       const backup = await exportBackupData(db);
 
-      expect(backup.meta.version).toBe(1);
-      expect(backup.meta.appVersion).toBe('0.4.0');
+      expect(backup.meta.version).toBe(2);
+      expect(backup.meta.appVersion).toBe('0.6.0');
       expect(typeof backup.meta.exportedAt).toBe('string');
 
       // Built-in categories (12) + 1 custom category = 13
@@ -137,6 +137,15 @@ describe('backupStorage', () => {
 
       const budgets = await db.getAllAsync('SELECT * FROM budgets');
       expect(budgets.length).toBe(2);
+
+      const restoredCategories = await db.getAllAsync<{ updated_at: number }>(
+        'SELECT updated_at FROM categories WHERE id IN (101, 102);'
+      );
+      expect(restoredCategories.every((category) => category.updated_at > 0)).toBe(true);
+      const restoredBudgets = await db.getAllAsync<{ updated_at: number }>(
+        'SELECT updated_at FROM budgets ORDER BY id;'
+      );
+      expect(restoredBudgets.every((budget) => budget.updated_at > 0)).toBe(true);
     } finally {
       close();
     }

@@ -252,7 +252,21 @@ export function createCategoryStorage(db: SQLiteDatabaseLike): CategoryStorage {
           idToDelete
         );
 
-        // Delete any category budgets for the deleted category
+        // Preserve recurring schedules by moving them with their transactions.
+        await db.runAsync(
+          `UPDATE recurring_transactions SET category_id = ?, updated_at = ? WHERE category_id = ?;`,
+          targetCategoryId,
+          now,
+          idToDelete
+        );
+
+        // Record removed budgets so sync peers can apply the same deletion.
+        await db.runAsync(
+          `INSERT INTO deleted_tombstones (entity_type, entity_id, deleted_at)
+           SELECT 'budget', id, ? FROM budgets WHERE category_id = ?;`,
+          now,
+          idToDelete
+        );
         await db.runAsync(`DELETE FROM budgets WHERE category_id = ?;`, idToDelete);
 
         // Delete the category

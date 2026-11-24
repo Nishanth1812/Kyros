@@ -190,6 +190,11 @@ describe('Category Management and Schema v4', () => {
 
       // Custom dining (id: 2) has 2 transactions (101, 102) and 1 budget (id: 1)
       // Reassign to Food (id: 1)
+      await db.runAsync(
+        `INSERT INTO recurring_transactions
+          (id, amount_minor, type, category_id, frequency, next_due_date, is_active, created_at, updated_at)
+         VALUES (11, 2500, 'expense', 2, 'monthly', '2026-12-01', 1, 1000, 1000);`
+      );
       const result = await storage.deleteCategoryWithReassignment(2, 1);
       expect(result.reassignedCount).toBe(2);
 
@@ -210,12 +215,19 @@ describe('Category Management and Schema v4', () => {
       );
       expect(budgets).toHaveLength(0);
 
+      const recurring = await db.getAllAsync<{ category_id: number }>(
+        'SELECT category_id FROM recurring_transactions WHERE category_id = 1;'
+      );
+      expect(recurring).toHaveLength(1);
+
       // Tombstone should be logged
       const tombstones = await db.getAllAsync<{ entity_type: string; entity_id: number }>(
-        'SELECT entity_type, entity_id FROM deleted_tombstones WHERE entity_type = "category";'
+        'SELECT entity_type, entity_id FROM deleted_tombstones ORDER BY entity_type, entity_id;'
       );
-      expect(tombstones).toHaveLength(1);
-      expect(tombstones[0].entity_id).toBe(2);
+      expect(tombstones).toEqual([
+        { entity_type: 'budget', entity_id: 1 },
+        { entity_type: 'category', entity_id: 2 },
+      ]);
     } finally {
       close();
     }
