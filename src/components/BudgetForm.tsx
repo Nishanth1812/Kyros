@@ -11,7 +11,8 @@ import {
 import { refreshAmountError } from '../lib/money';
 import { validateBudgetForm } from '../lib/budgetForm';
 import type { Category, NewBudgetInput } from '../storage';
-import { colors, elevation, fontSize, radius, spacing } from '../theme/theme';
+import { useTheme, useThemedStyles } from '../theme/ThemeContext';
+import { type ThemeColors, elevation, fontSize, radius, spacing } from '../theme/theme';
 
 export interface BudgetFormValues {
   /** null is the overall limit; any other value is an expense category id. */
@@ -56,6 +57,8 @@ export default function BudgetForm({
   onDelete,
   onCancel,
 }: BudgetFormProps) {
+  const styles = useThemedStyles(createStyles);
+  const { colors } = useTheme();
   const [categoryId, setCategoryId] = useState<number | null>(
     () => initialValues?.categoryId ?? initialCategoryId
   );
@@ -284,7 +287,7 @@ export default function BudgetForm({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,

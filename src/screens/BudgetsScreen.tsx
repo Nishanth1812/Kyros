@@ -14,13 +14,19 @@ import ScreenHeader from '../components/ScreenHeader';
 import { ErrorBanner, ErrorView, LoadingView } from '../components/StateViews';
 import {
   calculateBudgetProgress,
+  getBudgetThreshold,
   type BudgetProgress,
 } from '../lib/budgetProgress';
 import { currentMonthBounds, currentMonthLabel } from '../lib/dates';
 import { formatMinorUnits } from '../lib/money';
 import type { Budget, NewBudgetInput } from '../storage';
 import { useTransactions } from '../state/TransactionsContext';
-import { colors, elevation, fontSize, radius, spacing } from '../theme/theme';
+import { useTheme, useThemedStyles } from '../theme/ThemeContext';
+import { type ThemeColors, elevation, fontSize, radius, spacing } from '../theme/theme';
+import FinancialGoalsScreen from './FinancialGoalsScreen';
+
+const WARNING_COLOR = '#F59E0B';
+const DANGER_COLOR = '#EF4444';
 
 function toMessage(error: unknown): string {
   return error instanceof Error && error.message
@@ -36,15 +42,16 @@ function BudgetProgressDetails({
   progress: BudgetProgress;
   label: string;
 }) {
-  const overByMinor = progress.remainingMinor < 0 ? -progress.remainingMinor : 0;
-  const percent =
-    progress.budgetMinor > 0
-      ? Math.min(100, (progress.spentMinor / progress.budgetMinor) * 100)
-      : 0;
+  const styles = useThemedStyles(createStyles);
+  const { colors } = useTheme();
+  const threshold = getBudgetThreshold(progress);
+  const percent = Math.min(100, threshold.percentUsed);
   const status =
-    overByMinor > 0
-      ? `Over budget by ${formatMinorUnits(overByMinor)}`
-      : `Remaining ${formatMinorUnits(progress.remainingMinor)}`;
+    threshold.status === 'danger'
+      ? `Over budget by ${formatMinorUnits(threshold.overspentMinor)}`
+      : threshold.status === 'warning'
+        ? `Approaching limit (${threshold.percentUsed}% used)`
+        : `Remaining ${formatMinorUnits(progress.remainingMinor)}`;
 
   return (
     <View
@@ -62,14 +69,35 @@ function BudgetProgressDetails({
         <View
           style={[
             styles.progressFill,
-            overByMinor > 0 ? styles.progressFillOver : null,
+            threshold.status === 'warning' ? styles.progressFillWarning : null,
+            threshold.status === 'danger' ? styles.progressFillDanger : null,
             { width: `${percent}%` },
           ]}
         />
       </View>
-      <Text style={[styles.progressStatus, overByMinor > 0 ? styles.overText : null]}>
-        {status}
-      </Text>
+      {threshold.status === 'normal' ? (
+        <Text style={styles.progressStatus}>{status}</Text>
+      ) : (
+        <View
+          style={[
+            styles.statusBadge,
+            threshold.status === 'danger'
+              ? styles.statusBadgeDanger
+              : styles.statusBadgeWarning,
+          ]}
+        >
+          <Text
+            style={[
+              styles.statusBadgeText,
+              threshold.status === 'danger'
+                ? styles.statusBadgeTextDanger
+                : styles.statusBadgeTextWarning,
+            ]}
+          >
+            {status}
+          </Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -84,10 +112,13 @@ interface EditingScope {
 }
 
 export default function BudgetsScreen() {
+  const styles = useThemedStyles(createStyles);
+  const { colors } = useTheme();
   const {
     budgets,
     transactions,
     categories,
+    goals,
     status,
     error,
     refresh,
@@ -95,6 +126,7 @@ export default function BudgetsScreen() {
     deleteBudget,
   } = useTransactions();
   const [refreshing, setRefreshing] = useState(false);
+  const [showGoals, setShowGoals] = useState(false);
   const [editing, setEditing] = useState<EditingScope | null>(null);
 
   const expenseCategories = useMemo(
@@ -212,6 +244,12 @@ export default function BudgetsScreen() {
     });
   };
 
+  const activeGoalCount = goals.filter((goal) => goal.status === 'active').length;
+
+  if (showGoals) {
+    return <FinancialGoalsScreen onBack={() => setShowGoals(false)} />;
+  }
+
   return (
     <ScrollView
       style={styles.screen}
@@ -229,6 +267,29 @@ export default function BudgetsScreen() {
         title="Budgets"
         subtitle="Set a recurring monthly limit for all expenses or for individual expense categories. Limits reset each calendar month."
       />
+
+      <Pressable
+        onPress={() => setShowGoals(true)}
+        accessibilityRole="button"
+        accessibilityLabel={`Savings goals${
+          activeGoalCount > 0 ? `: ${activeGoalCount} active` : ''
+        }`}
+        accessibilityHint="Opens savings goals with targets and contributions"
+        style={({ pressed }) => [
+          styles.goalsCard,
+          pressed ? styles.cardActionPressed : null,
+        ]}
+      >
+        <View style={styles.goalsCardInfo}>
+          <Text style={styles.goalsCardTitle}>Savings goals</Text>
+          <Text style={styles.goalsCardText}>
+            {activeGoalCount > 0
+              ? `${activeGoalCount} active goal${activeGoalCount === 1 ? '' : 's'} in progress.`
+              : 'Track targets like an emergency fund or a trip.'}
+          </Text>
+        </View>
+        <Text style={styles.cardActionText}>Open</Text>
+      </Pressable>
 
       {status === 'loading' ? <LoadingView subject="budgets" /> : null}
       {status === 'error' ? (
@@ -396,7 +457,7 @@ export default function BudgetsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,
@@ -404,6 +465,32 @@ const styles = StyleSheet.create({
   content: {
     padding: spacing.lg,
     paddingBottom: spacing.xxl,
+  },
+  goalsCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    minHeight: 48,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+    ...elevation,
+  },
+  goalsCardInfo: {
+    flex: 1,
+  },
+  goalsCardTitle: {
+    fontSize: fontSize.body,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  goalsCardText: {
+    marginTop: spacing.xs,
+    fontSize: fontSize.caption,
+    color: colors.textMuted,
   },
   sectionTitle: {
     marginTop: spacing.lg,
@@ -522,8 +609,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     backgroundColor: colors.primary,
   },
-  progressFillOver: {
-    backgroundColor: colors.danger,
+  progressFillWarning: {
+    backgroundColor: WARNING_COLOR,
+  },
+  progressFillDanger: {
+    backgroundColor: DANGER_COLOR,
   },
   progressStatus: {
     marginTop: spacing.xs,
@@ -531,7 +621,30 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.income,
   },
-  overText: {
+  statusBadge: {
+    marginTop: spacing.xs,
+    alignSelf: 'flex-start',
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  statusBadgeWarning: {
+    backgroundColor: '#FEF3C7',
+    borderColor: WARNING_COLOR,
+  },
+  statusBadgeDanger: {
+    backgroundColor: colors.subtleRed,
+    borderColor: DANGER_COLOR,
+  },
+  statusBadgeText: {
+    fontSize: fontSize.small,
+    fontWeight: '700',
+  },
+  statusBadgeTextWarning: {
+    color: '#B45309',
+  },
+  statusBadgeTextDanger: {
     color: colors.danger,
   },
 });

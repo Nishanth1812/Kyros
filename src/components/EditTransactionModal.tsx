@@ -13,7 +13,8 @@ import type {
   NewTransactionInput,
   Transaction,
 } from '../storage';
-import { colors, fontSize, radius, spacing } from '../theme/theme';
+import { useTheme, useThemedStyles } from '../theme/ThemeContext';
+import { type ThemeColors, fontSize, radius, spacing } from '../theme/theme';
 import TransactionForm from './TransactionForm';
 
 export interface EditTransactionModalProps {
@@ -33,6 +34,8 @@ export default function EditTransactionModal({
   onSubmit,
   onCreateCategory,
 }: EditTransactionModalProps) {
+  const styles = useThemedStyles(createStyles);
+  const { colors } = useTheme();
   if (!transaction) return null;
 
   return (
@@ -81,7 +84,7 @@ export default function EditTransactionModal({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,

@@ -9,7 +9,8 @@ import {
 } from 'react-native';
 
 import type { Category, NewCategoryInput, TransactionType } from '../storage';
-import { colors, fontSize, radius, spacing } from '../theme/theme';
+import { useTheme, useThemedStyles } from '../theme/ThemeContext';
+import { type ThemeColors, fontSize, radius, spacing } from '../theme/theme';
 
 export interface CategoryPickerProps {
   /** Categories for the transaction's current type, chosen by the form. */
@@ -35,6 +36,8 @@ export default function CategoryPicker({
   onCreateCategory,
   disabled = false,
 }: CategoryPickerProps) {
+  const styles = useThemedStyles(createStyles);
+  const { colors } = useTheme();
   // This component owns only the new-category draft. Transaction fields live
   // in TransactionForm, so creating a category never clears the unsaved entry.
   const [showCreate, setShowCreate] = useState(false);
@@ -190,7 +193,7 @@ export default function CategoryPicker({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     marginTop: spacing.sm,
   },

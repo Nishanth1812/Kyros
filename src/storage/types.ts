@@ -5,6 +5,8 @@ export interface Category {
   type: TransactionType;
   name: string;
   isBuiltin: boolean;
+  isArchived: boolean;
+  updatedAt?: number;
 }
 
 export interface NewCategoryInput {
@@ -53,6 +55,7 @@ export interface Transaction {
   categoryId: number;
   /** Creation timestamp in milliseconds since epoch, used for stable ordering. */
   createdAt: number;
+  updatedAt?: number;
 }
 
 export interface NewTransactionInput {
@@ -129,8 +132,84 @@ export interface TransactionStorage {
 
 export interface CategoryStorage {
   initialize(): Promise<void>;
-  listCategories(type?: TransactionType): Promise<Category[]>;
+  listCategories(type?: TransactionType, includeArchived?: boolean): Promise<Category[]>;
   createCategory(input: NewCategoryInput): Promise<Category>;
+  renameCategory(id: number, newName: string): Promise<Category>;
+  archiveCategory(id: number, isArchived: boolean): Promise<Category>;
+  deleteCategoryWithReassignment(
+    idToDelete: number,
+    targetCategoryId: number
+  ): Promise<{ reassignedCount: number }>;
+}
+
+export type RecurringFrequency = 'daily' | 'weekly' | 'monthly' | 'yearly';
+
+export interface RecurringTransaction {
+  id: number;
+  amountMinor: MinorUnits;
+  type: TransactionType;
+  categoryId: number;
+  description: string | null;
+  frequency: RecurringFrequency;
+  nextDueDate: string;
+  isActive: boolean;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface NewRecurringInput {
+  amountMinor: unknown;
+  type: unknown;
+  categoryId: unknown;
+  description?: unknown;
+  frequency: unknown;
+  nextDueDate: unknown;
+  isActive?: boolean;
+}
+
+export interface RecurringStorage {
+  initialize(): Promise<void>;
+  listRecurring(): Promise<RecurringTransaction[]>;
+  addRecurring(input: NewRecurringInput): Promise<RecurringTransaction>;
+  updateRecurring(id: number, input: Partial<NewRecurringInput>): Promise<RecurringTransaction>;
+  deleteRecurring(id: number): Promise<void>;
+  toggleRecurringActive(id: number, isActive: boolean): Promise<RecurringTransaction>;
+  applyRecurring(id: number, asOfDate?: string): Promise<{ transaction: Transaction; nextDueDate: string }>;
+}
+
+export interface FinancialGoal {
+  id: number;
+  title: string;
+  targetAmountMinor: MinorUnits;
+  currentSavedMinor: MinorUnits;
+  targetDate: string | null;
+  status: 'active' | 'completed' | 'cancelled';
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface NewGoalInput {
+  title: unknown;
+  targetAmountMinor: unknown;
+  currentSavedMinor?: unknown;
+  targetDate?: unknown;
+  status?: 'active' | 'completed' | 'cancelled';
+}
+
+export interface GoalProgress {
+  percentage: number;
+  remainingMinor: number;
+  isCompleted: boolean;
+  projectedMonthlySavingsMinor?: number;
+}
+
+export interface GoalStorage {
+  initialize(): Promise<void>;
+  listGoals(): Promise<FinancialGoal[]>;
+  addGoal(input: NewGoalInput): Promise<FinancialGoal>;
+  updateGoal(id: number, input: Partial<NewGoalInput>): Promise<FinancialGoal>;
+  deleteGoal(id: number): Promise<void>;
+  contributeToGoal(id: number, deltaMinor: number): Promise<FinancialGoal>;
 }
 
 /**
@@ -176,10 +255,92 @@ export interface BudgetStorage {
   deleteBudget(id: number): Promise<void>;
 }
 
-export interface KyrosBackupMetadata {
+export type TombstoneEntityType = 'transaction' | 'category' | 'budget' | 'recurring' | 'goal';
+
+export interface TombstoneRecord {
+  id: number;
+  entityType: TombstoneEntityType;
+  entityId: number;
+  deletedAt: number;
+}
+
+/** A budget row with the sync timestamp that orders it in a delta. */
+export interface BudgetRecord extends Budget {
+  updatedAt: number;
+}
+
+export interface SyncChanges {
+  transactions: Transaction[];
+  categories: Category[];
+  budgets: BudgetRecord[];
+  goals: FinancialGoal[];
+  recurring: RecurringTransaction[];
+}
+
+/** Wire format for a delta exchange between two Kyros devices. */
+export interface KyrosSyncDeltaV1 {
   version: 1;
+  /** Epoch milliseconds when this delta was produced. */
+  clientTimestamp: number;
+  /** Epoch milliseconds the caller last synchronized through. */
+  sinceTimestamp: number;
+  changes: SyncChanges;
+  tombstones: TombstoneRecord[];
+}
+
+export interface SyncEntityCounts {
+  inserted: number;
+  updated: number;
+  deleted: number;
+  skipped: number;
+}
+
+export interface SyncReconciliationResult {
+  transactions: SyncEntityCounts;
+  categories: SyncEntityCounts;
+  budgets: SyncEntityCounts;
+  goals: SyncEntityCounts;
+  recurring: SyncEntityCounts;
+  tombstonesApplied: number;
+}
+
+export interface SyncStorageInfo {
+  /** Newest `updated_at` value across every synchronized table (0 when empty). */
+  latestUpdatedAt: number;
+  tombstoneCount: number;
+}
+
+export interface SyncStorage {
+  initialize(): Promise<void>;
+  /** Record or advance the deletion marker for one entity, keeping one row per entity. */
+  recordTombstone(
+    entityType: TombstoneEntityType,
+    entityId: number,
+    deletedAt?: number
+  ): Promise<void>;
+  /** Remove every marker for one entity (used when a newer edit resurrects it). */
+  clearTombstones(entityType: TombstoneEntityType, entityId: number): Promise<void>;
+  listTombstones(sinceTimestamp?: number): Promise<TombstoneRecord[]>;
+  getTombstone(
+    entityType: TombstoneEntityType,
+    entityId: number
+  ): Promise<TombstoneRecord | null>;
+  getSyncInfo(): Promise<SyncStorageInfo>;
+  listChangedTransactions(sinceTimestamp: number): Promise<Transaction[]>;
+  listChangedCategories(sinceTimestamp: number): Promise<Category[]>;
+  listChangedBudgets(sinceTimestamp: number): Promise<BudgetRecord[]>;
+  listChangedGoals(sinceTimestamp: number): Promise<FinancialGoal[]>;
+  listChangedRecurring(sinceTimestamp: number): Promise<RecurringTransaction[]>;
+}
+
+export interface KyrosBackupMetadata {
+  version: 1 | 2;
   appVersion: string;
   exportedAt: string;
+}
+
+export interface KyrosBackupMetadataV2 extends KyrosBackupMetadata {
+  version: 2;
 }
 
 export interface BackupCategory {
@@ -216,10 +377,76 @@ export interface KyrosBackupV1 {
   data: KyrosBackupData;
 }
 
+export interface BackupCategoryV2 {
+  id: number;
+  type: TransactionType;
+  name: string;
+  isBuiltin: boolean;
+  isArchived: boolean;
+  updatedAt: number;
+}
+
+export interface BackupTransactionV2 extends BackupTransaction {
+  updatedAt: number;
+}
+
+export interface BackupBudgetV2 extends BackupBudget {
+  updatedAt: number;
+}
+
+export interface BackupGoal {
+  id: number;
+  title: string;
+  targetAmountMinor: MinorUnits;
+  currentSavedMinor: MinorUnits;
+  targetDate: string | null;
+  status: 'active' | 'completed' | 'cancelled';
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface BackupRecurring {
+  id: number;
+  amountMinor: MinorUnits;
+  type: TransactionType;
+  categoryId: number;
+  description: string | null;
+  frequency: RecurringFrequency;
+  nextDueDate: string;
+  isActive: boolean;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface BackupTombstone {
+  id: number;
+  entityType: TombstoneEntityType;
+  entityId: number;
+  deletedAt: number;
+}
+
+export interface KyrosBackupDataV2 extends KyrosBackupData {
+  categories: BackupCategoryV2[];
+  transactions: BackupTransactionV2[];
+  budgets: BackupBudgetV2[];
+  recurring: BackupRecurring[];
+  goals: BackupGoal[];
+  tombstones: BackupTombstone[];
+}
+
+/** Backup format introduced in Kyros 0.6; a strict superset of `KyrosBackupV1`. */
+export interface KyrosBackupV2 extends KyrosBackupV1 {
+  meta: KyrosBackupMetadataV2;
+  data: KyrosBackupDataV2;
+}
+
 export interface RestoreResult {
   categoriesCount: number;
   transactionsCount: number;
   budgetsCount: number;
+  recurringCount: number;
+  goalsCount: number;
+  tombstonesCount: number;
 }
 
 export class BackupValidationError extends Error {

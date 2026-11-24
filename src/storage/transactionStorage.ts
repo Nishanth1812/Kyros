@@ -8,6 +8,7 @@ import {
   TransactionValidationError,
 } from './types';
 import { assertValidCategoryId, validateTransactionInput } from './validation';
+import { createSyncStorage, withAtomicTransaction } from './syncStorage';
 
 interface TransactionRow {
   id: number;
@@ -17,10 +18,11 @@ interface TransactionRow {
   description: string | null;
   created_at: number;
   category_id: number;
+  updated_at: number;
 }
 
 const TRANSACTION_COLUMNS =
-  'id, type, amount_minor, date, description, created_at, category_id';
+  'id, type, amount_minor, date, description, created_at, category_id, updated_at';
 
 function rowToTransaction(row: TransactionRow): Transaction {
   return {
@@ -31,6 +33,7 @@ function rowToTransaction(row: TransactionRow): Transaction {
     description: row.description ?? null,
     categoryId: row.category_id,
     createdAt: row.created_at,
+    updatedAt: row.updated_at,
   };
 }
 
@@ -64,6 +67,7 @@ async function assertCategoryMatches(
 }
 
 export function createTransactionStorage(db: SQLiteDatabaseLike): TransactionStorage {
+  const syncStorage = createSyncStorage(db);
   let initialized = false;
   let initPromise: Promise<void> | null = null;
 
@@ -109,13 +113,14 @@ export function createTransactionStorage(db: SQLiteDatabaseLike): TransactionSto
       const createdAt = Date.now();
       const result = await db.runAsync(
         `INSERT INTO transactions
-           (type, amount_minor, date, description, category_id, created_at)
-         VALUES (?, ?, ?, ?, ?, ?);`,
+           (type, amount_minor, date, description, category_id, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?);`,
         type,
         amountMinor,
         date,
         description,
         categoryId,
+        createdAt,
         createdAt
       );
 
@@ -127,6 +132,7 @@ export function createTransactionStorage(db: SQLiteDatabaseLike): TransactionSto
         description,
         categoryId,
         createdAt,
+        updatedAt: createdAt,
       };
     },
 
@@ -150,15 +156,17 @@ export function createTransactionStorage(db: SQLiteDatabaseLike): TransactionSto
         throw new Error(`Transaction ${id} does not exist.`);
       }
 
+      const updatedAt = Math.max(Date.now(), (existing.updatedAt ?? existing.createdAt) + 1);
       await db.runAsync(
         `UPDATE transactions
-         SET type = ?, amount_minor = ?, date = ?, description = ?, category_id = ?
+         SET type = ?, amount_minor = ?, date = ?, description = ?, category_id = ?, updated_at = ?
          WHERE id = ?;`,
         type,
         amountMinor,
         date,
         description,
         categoryId,
+        updatedAt,
         id
       );
 
@@ -172,13 +180,21 @@ export function createTransactionStorage(db: SQLiteDatabaseLike): TransactionSto
         description,
         categoryId,
         createdAt: existing.createdAt,
+        updatedAt,
       };
     },
 
     async deleteTransaction(id: number): Promise<void> {
       await ensureInitialized();
       if (!Number.isInteger(id) || id <= 0) return;
-      await db.runAsync('DELETE FROM transactions WHERE id = ?;', id);
+      await syncStorage.initialize();
+      await withAtomicTransaction(db, async () => {
+        const existing = await selectTransaction(id);
+        if (!existing) return;
+        const deletedAt = Math.max(Date.now(), (existing.updatedAt ?? existing.createdAt) + 1);
+        await syncStorage.recordTombstone('transaction', id, deletedAt);
+        await db.runAsync('DELETE FROM transactions WHERE id = ?;', id);
+      });
     },
 
     async listTransactions(): Promise<Transaction[]> {

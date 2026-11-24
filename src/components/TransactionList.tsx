@@ -1,7 +1,8 @@
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 
 import type { Transaction } from '../storage';
-import { colors, spacing } from '../theme/theme';
+import { useTheme, useThemedStyles } from '../theme/ThemeContext';
+import { type ThemeColors, spacing } from '../theme/theme';
 import TransactionRow from './TransactionRow';
 
 export default function TransactionList({
@@ -17,6 +18,8 @@ export default function TransactionList({
   onEdit: (transaction: Transaction) => void;
   onDelete: (transaction: Transaction) => void;
 }) {
+  const styles = useThemedStyles(createStyles);
+  const { colors } = useTheme();
   return (
     <FlatList
       data={transactions}
@@ -39,7 +42,7 @@ export default function TransactionList({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   content: {
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xxl,

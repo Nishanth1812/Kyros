@@ -1,13 +1,11 @@
 # Kyros
 
-Kyros 0.5 is a local-first Android app for recording, organizing, reviewing, and
-budgeting income and expenses, with visual spending analytics and local backup/export.
-Entries live in on-device SQLite, are stored as integer minor units, and can be
-grouped by category, corrected, filtered, and summarized on a dashboard with month
-navigation. Recurring monthly budgets show spending progress against saved limits.
-No account, network, or backend is required.
+Kyros 0.6.0 is a local-first Android app for recording, organizing, and reviewing
+income and expenses, with budgets, savings goals, recurring schedules, analytics,
+and versioned local backups. Financial data stays in on-device SQLite and money is
+stored as integer paise. No account, network, or backend is required.
 
-## Features (0.5)
+## Features (0.6)
 
 - **Visual analytics and trends:** explore 6-month income vs. expense trajectories,
   proportional category spending distribution bars, daily average spend, and savings rates.
@@ -20,7 +18,8 @@ No account, network, or backend is required.
 - **Explicit restore confirmation:** view record counts and export dates before
   restoring, with an option to back up existing data before replacing it.
 - **Categories:** built-in income and expense categories plus your own custom
-  categories can be selected when adding or editing a transaction.
+  categories can be selected when adding or editing a transaction. Rename and
+  archive custom categories; delete them with transaction and schedule reassignment.
 - **Edit and delete:** correct an entry in place; deleting asks for confirmation
   and never removes its category or the other transactions.
 - **History filters:** narrow the newest-first list by type, category, and an
@@ -29,8 +28,19 @@ No account, network, or backend is required.
   breakdowns derived on-the-fly from saved transactions.
 - **Budgets:** set recurring monthly limits for all expenses and for individual
   expense categories, then see spent, remaining, and over-budget amounts on the Budgets tab.
+  Warnings appear at 80% and the over-limit state appears at 100%.
+- **Recurring transactions:** create daily, weekly, monthly, or yearly schedules,
+  review due items on the Dashboard, and apply selected entries to history.
+- **Savings goals:** save targets with optional deadlines, track deposits and
+  withdrawals, and see progress and the monthly amount needed to reach a target.
+- **Appearance and History search:** choose system, light, or dark appearance;
+  search transaction descriptions, category names, and amounts, or filter by `#tags`.
 - **Accessibility & Quality:** minimum 48×48 dp touch targets across buttons, chips,
   and pickers; descriptive accessibility labels and roles; and layout scaling.
+- **Sync readiness:** export and apply timestamped local deltas with conflict
+  handling and deletion markers. There is no cloud transport; SQLite stays on-device.
+- **Backup V2:** backups include goals, recurring schedules, category state,
+  timestamps, and deletion markers. V1 backups remain supported.
 
 ## Development
 
@@ -76,13 +86,13 @@ increment the patch and versionCode.
 
 ```
 src/
-  storage/       amounts, validation, schema, categories, budgets and SQLite access (shared module)
-  lib/           database setup, INR money, dates, filters, summaries and budget progress
-  state/         transactions, categories and budgets context: loading / error / data and mutations
+  storage/       amounts, validation, schema, categories, budgets, goals, backup and sync storage
+  lib/           database setup, INR money, dates, filters, summaries and domain calculations
+  state/         shared transaction, budget, goal and recurring state
   navigation/    bottom tabs (Dashboard, Add, History, Budgets, and Data)
   components/    transaction and budget forms, category picker, edit modal, filters, row, list, and states
   screens/       AddTransactionScreen, HistoryScreen, DashboardScreen, BudgetsScreen, and DataManagementScreen
-  theme/         shared colours, spacing, radius and typography
+  theme/         system/light/dark palettes, persisted theme mode, spacing and typography
 App.tsx            providers and root navigator
 index.ts           React Native root component registration
 ```
@@ -95,32 +105,30 @@ index.ts           React Native root component registration
   no floating-point money ever reaches SQLite. There is no currency conversion;
   widening this to multiple currencies is a later release decision.
 - **Categories:** a category belongs to one transaction type; custom names are
-  unique per type without regard to case. Built-ins are seeded on first run;
-  category rename/removal is deferred. Removing a category in a future release
-  must preserve its linked transactions.
+  unique per type without regard to case. Built-ins are seeded on first run and
+  cannot be renamed, archived, or deleted. Deleting a custom category reassigns
+  transactions and recurring schedules and records removed budgets for sync.
 - **Dashboard periods:** the dashboard shows lifetime net balance (all income
   minus all expenses), current-calendar-month income and expense totals, and
   current-month expenses by category. The month follows the device's local date.
 - **Budgets:** limits recur each local calendar month and are saved as positive
   integer paise. Progress is derived only from expense transactions in the
   current local month (first through last day, inclusive), so income is excluded
-  and actuals are never stored. Overspend is shown exactly; the visual bar caps
-  at 100%. There is at most one overall limit and one per expense category, with
-  no rollover or alerts.
+  and actuals are never stored. A warning appears at 80%; over-limit status and
+  exact overspend appear at 100%. The visual bar caps at 100%. There is at most
+  one overall limit and one per expense category, with no rollover.
 - **Android range:** minimum Android 7.0 (API 24), with portrait layout.
-  Package `com.kyros.app`, base `versionCode` 5,
-  `versionName` 0.3.0. CI tag `versionCode` values are derived from release tags:
-  source code 5 publishes v0.3.0/code 6 after v0.2.0/code 5.
+  Package `com.kyros.app`, source `versionCode` 9,
+  `versionName` 0.6.0. CI derives published version codes from release tags.
 - **Ordering:** the storage layer sorts by date, then creation time, then id,
   all descending, so the newest entry is always first.
-- **Migration:** a v1-to-v2 SQLite migration upgrades existing 0.1 databases in
-  place, keeping every transaction's ID, amount, type, date, description, and
-  creation time; migrated rows get the matching type's `Other` category and can
-  be recategorized by editing. A v2-to-v3 migration then adds budget storage for
-  0.2 databases without changing any transaction or category row; fresh installs
-  create v3 directly. Migrations run in one transaction: a failure leaves the
-  original data and schema version intact.
-- **Offline:** all reads and writes, including budgets, use the local
-  `kyros.sqlite` database on the device; the app makes no network requests.
-  Android automatic backup is disabled; data is lost if the app is uninstalled
-  or the device is lost.
+- **Migration:** the app migrates supported SQLite databases through schema v4
+  in place. The v3-to-v4 migration adds revision timestamps, category archival,
+  recurring schedules, goals, and deletion markers transactionally. Failure
+  leaves data and schema version intact. Earlier migrations preserve rows.
+- **Backup compatibility:** V1 backups restore with defaults for fields that
+  did not exist; V2 backups replace categories, transactions, budgets, recurring
+  schedules, goals, and deletion markers atomically.
+- **Offline:** all core reads and writes use the local `kyros.sqlite` database;
+  the delta engine does not send data over a network. Android automatic backup
+  is disabled; make a user-controlled export before uninstalling or replacing a device.
