@@ -1,6 +1,6 @@
 # Kyros
 
-Kyros 0.6.1 is a local-first Android app for recording, organizing, and reviewing
+Kyros 0.6.2 is a local-first Android app for recording, organizing, and reviewing
 income and expenses, with budgets, savings goals, recurring schedules, analytics,
 and versioned local backups. Financial data stays in on-device SQLite and money is
 stored as integer paise. No account, network, or backend is required.
@@ -35,8 +35,9 @@ stored as integer paise. No account, network, or backend is required.
   withdrawals, and see progress and the monthly amount needed to reach a target.
 - **Appearance and History search:** choose system, light, or dark appearance;
   search transaction descriptions, category names, and amounts, or filter by `#tags`.
-- **Responsive screens:** Dashboard and transaction entry respect safe areas,
-  stay centered on wider displays, and retain the selected light or dark theme.
+- **Responsive screens:** all tabs and nested screens respect safe areas, stay
+  centered on wider displays, and keep actions usable on narrow phones in both
+  light and dark themes.
 - **Accessibility & Quality:** minimum 48×48 dp touch targets across buttons, chips,
   and pickers; descriptive accessibility labels and roles; and layout scaling.
 - **Sync readiness:** export and apply timestamped local deltas with conflict
