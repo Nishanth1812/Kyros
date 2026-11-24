@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   actionButton: {
-    minHeight: 44,
+    minHeight: 48,
     minWidth: 64,
     borderRadius: radius.sm,
     borderWidth: 1,

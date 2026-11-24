@@ -12,15 +12,20 @@ import {
 import {
   getBudgetStorage,
   getCategoryStorage,
+  getDatabaseInstance,
   getTransactionStorage,
 } from '../lib/database';
-import type {
-  Budget,
-  Category,
-  NewBudgetInput,
-  NewCategoryInput,
-  NewTransactionInput,
-  Transaction,
+import {
+  exportBackupData,
+  restoreBackupData,
+  type Budget,
+  type Category,
+  type KyrosBackupV1,
+  type NewBudgetInput,
+  type NewCategoryInput,
+  type NewTransactionInput,
+  type RestoreResult,
+  type Transaction,
 } from '../storage';
 
 type LoadStatus = 'loading' | 'ready' | 'error';
@@ -42,6 +47,8 @@ interface TransactionsContextValue {
   saveBudget: (input: NewBudgetInput) => Promise<Budget>;
   /** Deletes the requested row if present; an unknown id is a no-op. */
   deleteBudget: (id: number) => Promise<void>;
+  exportBackup: () => Promise<KyrosBackupV1>;
+  restoreBackup: (payload: unknown) => Promise<RestoreResult>;
 }
 
 const TransactionsContext = createContext<TransactionsContextValue | null>(null);
@@ -162,6 +169,22 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
     [load]
   );
 
+  const exportBackup = useCallback(async () => {
+    const db = await getDatabaseInstance();
+    return exportBackupData(db);
+  }, []);
+
+  const restoreBackup = useCallback(
+    async (payload: unknown) => {
+      const db = await getDatabaseInstance();
+      const result = await restoreBackupData(db, payload);
+      hasLoaded.current = true;
+      await load(true);
+      return result;
+    },
+    [load]
+  );
+
   const value = useMemo<TransactionsContextValue>(
     () => ({
       transactions,
@@ -176,6 +199,8 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       addCategory,
       saveBudget,
       deleteBudget,
+      exportBackup,
+      restoreBackup,
     }),
     [
       transactions,
@@ -190,6 +215,8 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       addCategory,
       saveBudget,
       deleteBudget,
+      exportBackup,
+      restoreBackup,
     ]
   );
 

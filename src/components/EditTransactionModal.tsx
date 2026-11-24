@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   closeButton: {
-    minHeight: 44,
+    minHeight: 48,
     justifyContent: 'center',
     paddingHorizontal: spacing.sm,
     borderRadius: radius.sm,

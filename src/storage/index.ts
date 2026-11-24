@@ -1,6 +1,8 @@
 export { createTransactionStorage } from './transactionStorage';
 export { createCategoryStorage } from './categoryStorage';
 export { createBudgetStorage } from './budgetStorage';
+export { exportBackupData, restoreBackupData } from './backupStorage';
+export { validateBackupPayload } from './backupValidation';
 export { initializeSchema, SCHEMA_VERSION } from './schema';
 export {
   validateTransactionInput,
@@ -14,8 +16,16 @@ export {
   TransactionValidationError,
   CategoryValidationError,
   BudgetValidationError,
+  BackupValidationError,
 } from './types';
 export type {
+  KyrosBackupV1,
+  KyrosBackupMetadata,
+  KyrosBackupData,
+  BackupCategory,
+  BackupTransaction,
+  BackupBudget,
+  RestoreResult,
   Budget,
   NewBudgetInput,
   BudgetStorage,

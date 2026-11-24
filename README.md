@@ -1,13 +1,19 @@
 # Kyros
 
-Kyros 0.3 is a local-first Android app for recording, organizing, reviewing, and
-budgeting income and expenses. Entries live in on-device SQLite, are stored as
-integer minor units, and can be grouped by category, corrected, filtered, and
-summarized on a dashboard. Recurring monthly budgets show spending progress
-against saved limits. No account, network, or backend is required.
+Kyros 0.4 is a local-first Android app for recording, organizing, reviewing, and
+budgeting income and expenses, with user-controlled local backup and restore.
+Entries live in on-device SQLite, are stored as integer minor units, and can be
+grouped by category, corrected, filtered, and summarized on a dashboard. Recurring
+monthly budgets show spending progress against saved limits. No account, network,
+or backend is required.
 
-## Features (0.3)
+## Features (0.4)
 
+- **Local backup and restore:** safely export all transactions, categories, and
+  budgets as portable, versioned JSON using Android's Storage Access Framework,
+  and restore them atomically with full rollback safety.
+- **Explicit restore confirmation:** view record counts and export dates before
+  restoring, with an option to back up existing data before replacing it.
 - **Categories:** built-in income and expense categories plus your own custom
   categories can be selected when adding or editing a transaction.
 - **Edit and delete:** correct an entry in place; deleting asks for confirmation
@@ -19,9 +25,8 @@ against saved limits. No account, network, or backend is required.
 - **Budgets:** set a recurring monthly limit for all expenses and for individual
   expense categories, then see current-month spent, remaining, and over-budget
   amounts on the Budgets tab.
-- **Local migration:** existing 0.1 databases are upgraded in place with every
-  saved transaction kept and assigned to its type's `Other` category; 0.2
-  databases gain budget storage without changing any transaction or category.
+- **Accessibility & Quality:** minimum 48×48 dp touch targets across buttons, chips,
+  and pickers; descriptive accessibility labels and roles; and layout scaling.
 
 ## Development
 
@@ -70,9 +75,9 @@ src/
   storage/       amounts, validation, schema, categories, budgets and SQLite access (shared module)
   lib/           database setup, INR money, dates, filters, summaries and budget progress
   state/         transactions, categories and budgets context: loading / error / data and mutations
-  navigation/    bottom tabs (Dashboard, Add, History and Budgets)
+  navigation/    bottom tabs (Dashboard, Add, History, Budgets, and Data)
   components/    transaction and budget forms, category picker, edit modal, filters, row, list, and states
-  screens/       AddTransactionScreen, HistoryScreen, DashboardScreen and BudgetsScreen
+  screens/       AddTransactionScreen, HistoryScreen, DashboardScreen, BudgetsScreen, and DataManagementScreen
   theme/         shared colours, spacing, radius and typography
 App.tsx            providers and root navigator
 index.ts           React Native root component registration

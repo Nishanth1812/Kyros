@@ -3,4 +3,5 @@ export type RootTabParamList = {
   Add: undefined;
   History: undefined;
   Budgets: undefined;
+  Data: undefined;
 };
