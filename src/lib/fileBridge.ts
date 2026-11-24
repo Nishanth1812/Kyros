@@ -1,6 +1,10 @@
 export interface FileBridge {
-  saveBackupFile(suggestedName: string, jsonString: string): Promise<boolean>;
-  pickBackupFile(): Promise<string | null>;
+  saveBackupFile(
+    suggestedName: string,
+    jsonString: string,
+    mimeType?: string
+  ): Promise<boolean>;
+  pickBackupFile(mimeType?: string): Promise<string | null>;
 }
 
 export interface NativeFileModule {
@@ -24,20 +28,26 @@ function resolveNativeModule(): NativeFileModule | undefined {
 
 export function createFileBridge(customModule?: NativeFileModule): FileBridge {
   return {
-    async saveBackupFile(suggestedName: string, jsonString: string): Promise<boolean> {
+    async saveBackupFile(
+      suggestedName: string,
+      content: string,
+      mimeType?: string
+    ): Promise<boolean> {
       const module = customModule ?? resolveNativeModule();
       if (!module || typeof module.createDocument !== 'function') {
         throw new Error('Native file export module is not available on this platform.');
       }
-      return module.createDocument(suggestedName, 'application/json', jsonString);
+      const effectiveMime =
+        mimeType ?? (suggestedName.endsWith('.csv') ? 'text/csv' : 'application/json');
+      return module.createDocument(suggestedName, effectiveMime, content);
     },
 
-    async pickBackupFile(): Promise<string | null> {
+    async pickBackupFile(mimeType: string = 'application/json'): Promise<string | null> {
       const module = customModule ?? resolveNativeModule();
       if (!module || typeof module.openDocument !== 'function') {
         throw new Error('Native file picker module is not available on this platform.');
       }
-      return module.openDocument('application/json');
+      return module.openDocument(mimeType);
     },
   };
 }

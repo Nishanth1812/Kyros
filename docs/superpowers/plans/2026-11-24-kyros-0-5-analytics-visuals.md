@@ -118,13 +118,13 @@
 - Modify: `src/screens/DataManagementScreen.tsx`
 - Modify: `tests/dataManagementScreen.test.ts`
 
-- [ ] **Step 1: Add CSV Export button to DataManagementScreen**
+- [x] **Step 1: Add CSV Export button to DataManagementScreen**
   Add "Export Transactions as CSV" button under the Backup & Recovery card. Format transactions using `formatTransactionsToCsv`, generate `kyros-transactions-YYYY-MM-DD.csv`, and save using `defaultFileBridge.saveBackupFile`.
 
-- [ ] **Step 2: Add feedback banners and accessibility**
+- [x] **Step 2: Add feedback banners and accessibility**
   Show success banner with transaction count on export; display error message if cancelled or failed.
 
-- [ ] **Step 3: Run tests and typecheck**
+- [x] **Step 3: Run tests and typecheck**
   Run: `bun test` and `npm run typecheck`.
 
 ---

@@ -25,6 +25,23 @@ describe('fileBridge', () => {
     });
   });
 
+  it('infers text/csv mime type for .csv files', async () => {
+    let capturedMime = '';
+    const mockModule: NativeFileModule = {
+      async createDocument(name, mime, content) {
+        capturedMime = mime;
+        return true;
+      },
+      async openDocument() {
+        return null;
+      },
+    };
+
+    const bridge = createFileBridge(mockModule);
+    await bridge.saveBackupFile('transactions.csv', 'header\r\nrow');
+    expect(capturedMime).toBe('text/csv');
+  });
+
   it('handles user cancellation during file export', async () => {
     const mockModule: NativeFileModule = {
       async createDocument() {
