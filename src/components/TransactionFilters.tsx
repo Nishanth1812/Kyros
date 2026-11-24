@@ -12,6 +12,7 @@ import {
   type TransactionFilters as FilterValues,
 } from '../lib/transactionFilters';
 import type { Category, TransactionType } from '../storage';
+import { responsivePageWidthStyle } from '../theme/layout';
 import { useTheme, useThemedStyles } from '../theme/ThemeContext';
 import { type ThemeColors, fontSize, radius, spacing } from '../theme/theme';
 
@@ -210,9 +211,10 @@ export default function TransactionFiltersBar({
 
 const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
-    marginHorizontal: spacing.lg,
+    ...responsivePageWidthStyle,
+    paddingHorizontal: spacing.md,
     marginBottom: spacing.md,
-    padding: spacing.md,
+    paddingVertical: spacing.md,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
@@ -288,6 +290,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   dateInput: {
     flex: 1,
+    minWidth: 0,
     minHeight: 48,
     borderWidth: 1,
     borderColor: colors.border,

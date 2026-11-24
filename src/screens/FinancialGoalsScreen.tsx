@@ -10,6 +10,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import GoalCard from '../components/GoalCard';
 import ScreenHeader from '../components/ScreenHeader';
@@ -18,6 +19,7 @@ import { calculateGoalProgress } from '../lib/goalCalculations';
 import { formatMinorUnits, parseAmountToMinorUnits } from '../lib/money';
 import type { FinancialGoal } from '../storage/types';
 import { useTransactions } from '../state/TransactionsContext';
+import { responsivePageContentStyle } from '../theme/layout';
 import { useTheme, useThemedStyles } from '../theme/ThemeContext';
 import { type ThemeColors, elevation, fontSize, radius, spacing } from '../theme/theme';
 
@@ -34,6 +36,7 @@ function toMessage(error: unknown): string {
 
 export default function FinancialGoalsScreen({ onBack }: { onBack: () => void }) {
   const styles = useThemedStyles(createStyles);
+  const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const { goals, status, error, refresh, addGoal, deleteGoal, contributeToGoal } =
     useTransactions();
@@ -187,7 +190,7 @@ export default function FinancialGoalsScreen({ onBack }: { onBack: () => void })
   return (
     <ScrollView
       style={styles.screen}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[responsivePageContentStyle, { paddingTop: insets.top + spacing.md }]}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -478,10 +481,6 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,
-  },
-  content: {
-    padding: spacing.lg,
-    paddingBottom: spacing.xxl,
   },
   backButton: {
     alignSelf: 'flex-start',

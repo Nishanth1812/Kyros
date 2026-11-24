@@ -7,6 +7,7 @@ import ScreenHeader from '../components/ScreenHeader';
 import TransactionForm from '../components/TransactionForm';
 import type { RootTabParamList } from '../navigation/types';
 import { useTransactions } from '../state/TransactionsContext';
+import { responsivePageContentStyle } from '../theme/layout';
 import { useThemedStyles } from '../theme/ThemeContext';
 import { type ThemeColors, spacing } from '../theme/theme';
 
@@ -21,7 +22,10 @@ export default function AddTransactionScreen() {
   return (
     <ScrollView
       style={styles.screen}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg }]}
+      contentContainerStyle={[
+        responsivePageContentStyle,
+        { maxWidth: 720, paddingTop: insets.top + spacing.lg },
+      ]}
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"
     >
@@ -45,13 +49,5 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,
-  },
-  content: {
-    flexGrow: 1,
-    alignSelf: 'center',
-    width: '100%',
-    maxWidth: 720,
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.xxl,
   },
 });

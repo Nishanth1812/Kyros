@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import ScreenHeader from '../components/ScreenHeader';
 import { formatTransactionsToCsv } from '../lib/csvExport';
@@ -17,6 +18,7 @@ import { defaultFileBridge } from '../lib/fileBridge';
 import { useTransactions } from '../state/TransactionsContext';
 import { validateBackupPayload } from '../storage/backupValidation';
 import type { SyncStorageInfo } from '../storage/types';
+import { responsivePageContentStyle } from '../theme/layout';
 import { useTheme, useThemedStyles } from '../theme/ThemeContext';
 import { type ThemeColors, elevation, fontSize, radius, spacing } from '../theme/theme';
 import CategoryManagementScreen from './CategoryManagementScreen';
@@ -28,6 +30,7 @@ function formatSyncTimestamp(timestamp: number): string {
 
 export default function DataManagementScreen() {
   const styles = useThemedStyles(createStyles);
+  const insets = useSafeAreaInsets();
   const { colors, mode, setMode } = useTheme();
   const { transactions, categories, budgets, exportBackup, restoreBackup } = useTransactions();
   const [showCategoryManagement, setShowCategoryManagement] = useState(false);
@@ -176,7 +179,7 @@ export default function DataManagementScreen() {
   return (
     <ScrollView
       style={styles.screen}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[responsivePageContentStyle, { paddingTop: insets.top + spacing.lg }]}
       accessible={false}
     >
       <ScreenHeader
@@ -383,10 +386,6 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  content: {
-    padding: spacing.md,
-    paddingBottom: spacing.xxl,
-  },
   banner: {
     padding: spacing.md,
     borderRadius: radius.md,
@@ -545,9 +544,9 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   manageCategoriesButton: {
     minHeight: 48,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: colors.subtleGreen,
     borderWidth: 1,
-    borderColor: '#BFDBFE',
+    borderColor: colors.primary,
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
