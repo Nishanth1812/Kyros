@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import CategoryBreakdownChart from '../components/CategoryBreakdownChart';
 import ScreenHeader from '../components/ScreenHeader';
@@ -35,6 +36,7 @@ function toMessage(error: unknown): string {
 
 export default function DashboardScreen() {
   const styles = useThemedStyles(createStyles);
+  const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const { transactions, categories, status, error, refresh } = useTransactions();
   const [refreshing, setRefreshing] = useState(false);
@@ -86,7 +88,7 @@ export default function DashboardScreen() {
   return (
     <ScrollView
       style={styles.screen}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.md }]}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -269,7 +271,11 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.background,
   },
   content: {
-    padding: spacing.md,
+    flexGrow: 1,
+    alignSelf: 'center',
+    width: '100%',
+    maxWidth: 760,
+    paddingHorizontal: spacing.md,
     paddingBottom: spacing.xxl,
   },
   balanceCard: {
@@ -367,6 +373,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    columnGap: spacing.md,
     paddingVertical: spacing.xs,
     minHeight: 36,
   },
@@ -377,6 +385,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   metricValue: {
     fontSize: fontSize.heading,
     fontWeight: '700',
+    flexShrink: 1,
+    textAlign: 'right',
   },
   incomeText: {
     color: colors.income,
