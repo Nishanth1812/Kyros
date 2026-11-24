@@ -138,16 +138,16 @@
 - Modify: `README.md`
 - Modify: `plan.md`
 
-- [ ] **Step 1: Update version numbers**
+- [x] **Step 1: Update version numbers**
   Update version in `package.json` and `android/app/build.gradle`.
 
-- [ ] **Step 2: Write release notes**
+- [x] **Step 2: Write release notes**
   Create `release-notes/v0.5.0.md` detailing analytics, visual charts, month navigation, and CSV export.
 
-- [ ] **Step 3: Update README and roadmap**
+- [x] **Step 3: Update README and roadmap**
   Update `README.md` and `plan.md` to reflect 0.5 capabilities.
 
-- [ ] **Step 4: Verify test suite and typecheck**
+- [x] **Step 4: Verify test suite and typecheck**
   Run full test suite: `bun test`
   Run typecheck: `npm run typecheck`
 

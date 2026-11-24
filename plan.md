@@ -113,7 +113,23 @@ the Android file selection flow. Document what a restore replaces and how users
 can keep a copy of their existing data. No account or cloud backup is required
 for this release.
 
-### 0.5 and later — Connected features, when needed
+### 0.5 — Enhanced analytics and visuals (implemented)
+
+**Goal:** Provide visual analytics, category distribution charts, multi-month
+spending and income trends, historical month reviews, and CSV spreadsheet reports
+while preserving the local-first SQLite foundation.
+
+**Scope delivered:**
+
+- Month navigation on Dashboard to review any historical month's earnings,
+  spending, and category breakdown, with quick return to current month.
+- Proportional visual category distribution bars and percentage breakdowns.
+- 6-month historical spending and income trend chart with accessible touch targets.
+- Dedicated Financial Analytics screen with daily spending metrics, savings rate,
+  and category analysis.
+- RFC 4180 CSV transaction export via Storage Access Framework.
+
+### 0.6 and later — Connected features, when needed
 
 **Goal:** Support account-based access and cloud sync if user needs justify the
 additional service and data-safety costs.
