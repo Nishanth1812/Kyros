@@ -1,17 +1,22 @@
 # Kyros
 
-Kyros 0.4 is a local-first Android app for recording, organizing, reviewing, and
-budgeting income and expenses, with user-controlled local backup and restore.
+Kyros 0.5 is a local-first Android app for recording, organizing, reviewing, and
+budgeting income and expenses, with visual spending analytics and local backup/export.
 Entries live in on-device SQLite, are stored as integer minor units, and can be
-grouped by category, corrected, filtered, and summarized on a dashboard. Recurring
-monthly budgets show spending progress against saved limits. No account, network,
-or backend is required.
+grouped by category, corrected, filtered, and summarized on a dashboard with month
+navigation. Recurring monthly budgets show spending progress against saved limits.
+No account, network, or backend is required.
 
-## Features (0.4)
+## Features (0.5)
 
-- **Local backup and restore:** safely export all transactions, categories, and
-  budgets as portable, versioned JSON using Android's Storage Access Framework,
-  and restore them atomically with full rollback safety.
+- **Visual analytics and trends:** explore 6-month income vs. expense trajectories,
+  proportional category spending distribution bars, daily average spend, and savings rates.
+- **Historical month navigation:** review past months on the Dashboard with instant
+  recalculation of income, expenses, and category breakdown, plus a one-tap current-month return.
+- **CSV spreadsheet export:** export complete transaction history to standard comma-separated
+  (`.csv`) spreadsheet files using Android's native Storage Access Framework in the Data tab.
+- **Local backup and restore:** safely export and restore all transactions, categories, and
+  budgets as portable, versioned JSON with atomic rollback safety.
 - **Explicit restore confirmation:** view record counts and export dates before
   restoring, with an option to back up existing data before replacing it.
 - **Categories:** built-in income and expense categories plus your own custom
@@ -20,11 +25,10 @@ or backend is required.
   and never removes its category or the other transactions.
 - **History filters:** narrow the newest-first list by type, category, and an
   inclusive date range, with a clear-filters action.
-- **Dashboard:** lifetime net balance, current-month income and expense totals,
-  and current-month expenses by category, all derived from saved transactions.
-- **Budgets:** set a recurring monthly limit for all expenses and for individual
-  expense categories, then see current-month spent, remaining, and over-budget
-  amounts on the Budgets tab.
+- **Dashboard:** lifetime net balance, monthly income and expense totals, and category
+  breakdowns derived on-the-fly from saved transactions.
+- **Budgets:** set recurring monthly limits for all expenses and for individual
+  expense categories, then see spent, remaining, and over-budget amounts on the Budgets tab.
 - **Accessibility & Quality:** minimum 48×48 dp touch targets across buttons, chips,
   and pickers; descriptive accessibility labels and roles; and layout scaling.
 

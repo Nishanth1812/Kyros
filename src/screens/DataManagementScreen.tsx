@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 
 import ScreenHeader from '../components/ScreenHeader';
+import { formatTransactionsToCsv } from '../lib/csvExport';
 import { defaultFileBridge } from '../lib/fileBridge';
 import { useTransactions } from '../state/TransactionsContext';
 import { validateBackupPayload } from '../storage/backupValidation';
@@ -18,6 +19,7 @@ import { colors, elevation, fontSize, radius, spacing } from '../theme/theme';
 export default function DataManagementScreen() {
   const { transactions, categories, budgets, exportBackup, restoreBackup } = useTransactions();
   const [isExporting, setIsExporting] = useState(false);
+  const [isExportingCsv, setIsExportingCsv] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [feedback, setFeedback] = useState<{ message: string; isError: boolean } | null>(null);
 
@@ -42,6 +44,32 @@ export default function DataManagementScreen() {
       setFeedback({ message: msg, isError: true });
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handleExportCsv = async () => {
+    if (transactions.length === 0) {
+      setFeedback({ message: 'No transactions to export.', isError: true });
+      return;
+    }
+    setIsExportingCsv(true);
+    setFeedback(null);
+    try {
+      const csvString = formatTransactionsToCsv(transactions, categories);
+      const today = new Date().toISOString().split('T')[0];
+      const filename = `kyros-transactions-${today}.csv`;
+      const saved = await defaultFileBridge.saveBackupFile(filename, csvString, 'text/csv');
+      if (saved) {
+        setFeedback({
+          message: `Exported ${transactions.length} transactions as CSV successfully.`,
+          isError: false,
+        });
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to export CSV report.';
+      setFeedback({ message: msg, isError: true });
+    } finally {
+      setIsExportingCsv(false);
     }
   };
 
@@ -113,7 +141,7 @@ export default function DataManagementScreen() {
     >
       <ScreenHeader
         title="Data Safety"
-        subtitle="Manage local backups and data recovery"
+        subtitle="Manage local backups, exports, and data recovery"
       />
 
       {feedback && (
@@ -137,6 +165,7 @@ export default function DataManagementScreen() {
         </View>
       )}
 
+      {/* Database Overview Card */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Stored Records Overview</Text>
         <Text style={styles.cardSubtitle}>
@@ -166,8 +195,33 @@ export default function DataManagementScreen() {
         </View>
       </View>
 
+      {/* CSV Spreadsheet Export Card */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Backup & Recovery</Text>
+        <Text style={styles.cardTitle}>Spreadsheet Report (CSV)</Text>
+        <Text style={styles.cardDescription}>
+          Export all transactions into a standard comma-separated (.csv) spreadsheet file readable by Google Sheets, Microsoft Excel, or personal accounting software.
+        </Text>
+
+        <TouchableOpacity
+          style={[styles.outlineButton, isExportingCsv && styles.buttonDisabled]}
+          onPress={handleExportCsv}
+          disabled={isExportingCsv}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel="Export transactions as CSV"
+          accessibilityHint="Saves all transactions to a CSV spreadsheet file on your device"
+        >
+          {isExportingCsv ? (
+            <ActivityIndicator color={colors.primary} />
+          ) : (
+            <Text style={styles.outlineButtonText}>Export Transactions (CSV)</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+
+      {/* JSON Backup & Restore Card */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Backup & Recovery (JSON)</Text>
         <Text style={styles.cardDescription}>
           Export a complete, portable JSON backup of your transactions, categories, and budgets using Android's file manager. You can safely store it anywhere or use it to restore your data.
         </Text>
@@ -299,6 +353,21 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: colors.textMuted,
     marginTop: 2,
+  },
+  outlineButton: {
+    backgroundColor: colors.subtleGreen,
+    borderColor: colors.primary,
+    borderWidth: 1.5,
+    borderRadius: radius.md,
+    minHeight: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+  },
+  outlineButtonText: {
+    color: colors.primary,
+    fontSize: fontSize.body,
+    fontWeight: '700',
   },
   primaryButton: {
     backgroundColor: colors.primary,

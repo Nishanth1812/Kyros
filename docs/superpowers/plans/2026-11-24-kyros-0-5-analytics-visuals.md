@@ -72,16 +72,16 @@
 - `<CategoryBreakdownChart breakdown={CategorySpendingBreakdown[]} totalMinor={number} />`
 - `<MonthlyTrendChart trends={MonthlyTrendDataPoint[]} onSelectMonth?: (point: MonthlyTrendDataPoint) => void />`
 
-- [ ] **Step 1: Implement CategoryBreakdownChart**
+- [x] **Step 1: Implement CategoryBreakdownChart**
   Build horizontal proportional distribution bar with colored segments and an accessible list of ranked categories showing percentage and formatted amount. Ensure full screen reader accessibility.
 
-- [ ] **Step 2: Implement MonthlyTrendChart**
+- [x] **Step 2: Implement MonthlyTrendChart**
   Build 6-month paired bar chart (Income in green, Expense in red) with proportional heights, month labels, and tap/touch targets for each bar.
 
-- [ ] **Step 3: Add component tests**
+- [x] **Step 3: Add component tests**
   Add tests in `tests/chartComponents.test.ts` checking accessibility labels and proportional percentage calculations.
 
-- [ ] **Step 4: Run tests and typecheck**
+- [x] **Step 4: Run tests and typecheck**
   Run: `bun test tests/chartComponents.test.ts` and `npm run typecheck`.
 
 ---
@@ -95,19 +95,19 @@
 - Modify: `src/navigation/AppNavigator.tsx`
 - Create: `tests/monthNavigation.test.ts`
 
-- [ ] **Step 1: Add MonthSelector component / controls to Dashboard**
+- [x] **Step 1: Add MonthSelector component / controls to Dashboard**
   Add previous/next month controls to `DashboardScreen.tsx`. Update dashboard summaries and categories to reflect the selected month. Add a quick link to open full Analytics.
 
-- [ ] **Step 2: Implement AnalyticsScreen**
+- [x] **Step 2: Implement AnalyticsScreen**
   Build `AnalyticsScreen.tsx` featuring the 6-month trend chart, selected month deep dive (daily average, top category, savings rate), and the complete category breakdown chart.
 
-- [ ] **Step 3: Update Navigation**
+- [x] **Step 3: Update Navigation**
   Add `Analytics: undefined` route to navigation so users can navigate to the dedicated Analytics view.
 
-- [ ] **Step 4: Add month navigation tests**
+- [x] **Step 4: Add month navigation tests**
   Add unit tests in `tests/monthNavigation.test.ts` checking navigation bounds and date shifts.
 
-- [ ] **Step 5: Run tests and typecheck**
+- [x] **Step 5: Run tests and typecheck**
   Run: `bun test` and `npm run typecheck`.
 
 ---
@@ -118,13 +118,13 @@
 - Modify: `src/screens/DataManagementScreen.tsx`
 - Modify: `tests/dataManagementScreen.test.ts`
 
-- [ ] **Step 1: Add CSV Export button to DataManagementScreen**
+- [x] **Step 1: Add CSV Export button to DataManagementScreen**
   Add "Export Transactions as CSV" button under the Backup & Recovery card. Format transactions using `formatTransactionsToCsv`, generate `kyros-transactions-YYYY-MM-DD.csv`, and save using `defaultFileBridge.saveBackupFile`.
 
-- [ ] **Step 2: Add feedback banners and accessibility**
+- [x] **Step 2: Add feedback banners and accessibility**
   Show success banner with transaction count on export; display error message if cancelled or failed.
 
-- [ ] **Step 3: Run tests and typecheck**
+- [x] **Step 3: Run tests and typecheck**
   Run: `bun test` and `npm run typecheck`.
 
 ---
@@ -138,16 +138,16 @@
 - Modify: `README.md`
 - Modify: `plan.md`
 
-- [ ] **Step 1: Update version numbers**
+- [x] **Step 1: Update version numbers**
   Update version in `package.json` and `android/app/build.gradle`.
 
-- [ ] **Step 2: Write release notes**
+- [x] **Step 2: Write release notes**
   Create `release-notes/v0.5.0.md` detailing analytics, visual charts, month navigation, and CSV export.
 
-- [ ] **Step 3: Update README and roadmap**
+- [x] **Step 3: Update README and roadmap**
   Update `README.md` and `plan.md` to reflect 0.5 capabilities.
 
-- [ ] **Step 4: Verify test suite and typecheck**
+- [x] **Step 4: Verify test suite and typecheck**
   Run full test suite: `bun test`
   Run typecheck: `npm run typecheck`
 
@@ -156,6 +156,6 @@
 ### Task 6: Published GitHub wiki review and verification — issue #45
 
 **Scope:**
-- Review existing GitHub wiki pages against Kyros 0.5.0 changes.
-- Update pages covering Analytics, Month Navigation, and CSV export.
-- Verify published wiki pages after release to `main`.
+- [x] Review existing GitHub wiki pages against Kyros 0.5.0 changes.
+- [x] Update pages covering Analytics, Month Navigation, and CSV export.
+- [x] Verify published wiki pages after release to `main`.

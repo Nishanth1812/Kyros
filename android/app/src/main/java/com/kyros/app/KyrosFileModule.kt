@@ -2,14 +2,15 @@ package com.kyros.app
 
 import android.app.Activity
 import android.content.Intent
+import android.os.Bundle
 import com.facebook.react.bridge.ActivityEventListener
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 
-class KyrosFileModule(context: ReactApplicationContext) :
-  ReactContextBaseJavaModule(context), ActivityEventListener {
+class KyrosFileModule(reactContext: ReactApplicationContext) :
+  ReactContextBaseJavaModule(reactContext), ActivityEventListener {
 
   private var pendingCreatePromise: Promise? = null
   private var pendingCreateContent: String? = null
@@ -21,14 +22,14 @@ class KyrosFileModule(context: ReactApplicationContext) :
   }
 
   init {
-    context.addActivityEventListener(this)
+    reactContext.addActivityEventListener(this)
   }
 
   override fun getName() = "KyrosFile"
 
   @ReactMethod
   fun createDocument(suggestedName: String, mimeType: String, content: String, promise: Promise) {
-    val activity = currentActivity
+    val activity = reactApplicationContext.currentActivity
     if (activity == null) {
       promise.reject("E_ACTIVITY_UNAVAILABLE", "Activity is not available")
       return
@@ -48,7 +49,7 @@ class KyrosFileModule(context: ReactApplicationContext) :
         type = mimeType
         putExtra(Intent.EXTRA_TITLE, suggestedName)
       }
-      activity.startActivityForResult(intent, REQUEST_CREATE_DOCUMENT)
+      reactApplicationContext.startActivityForResult(intent, REQUEST_CREATE_DOCUMENT, Bundle())
     } catch (e: Exception) {
       pendingCreatePromise = null
       pendingCreateContent = null
@@ -58,7 +59,7 @@ class KyrosFileModule(context: ReactApplicationContext) :
 
   @ReactMethod
   fun openDocument(mimeType: String, promise: Promise) {
-    val activity = currentActivity
+    val activity = reactApplicationContext.currentActivity
     if (activity == null) {
       promise.reject("E_ACTIVITY_UNAVAILABLE", "Activity is not available")
       return
@@ -76,14 +77,14 @@ class KyrosFileModule(context: ReactApplicationContext) :
         addCategory(Intent.CATEGORY_OPENABLE)
         type = mimeType
       }
-      activity.startActivityForResult(intent, REQUEST_OPEN_DOCUMENT)
+      reactApplicationContext.startActivityForResult(intent, REQUEST_OPEN_DOCUMENT, Bundle())
     } catch (e: Exception) {
       pendingOpenPromise = null
       promise.reject("E_OPEN_DOCUMENT_FAILED", e.message, e)
     }
   }
 
-  override fun onActivityResult(activity: Activity?, requestCode: Int, resultCode: Int, data: Intent?) {
+  override fun onActivityResult(activity: Activity, requestCode: Int, resultCode: Int, data: Intent?) {
     when (requestCode) {
       REQUEST_CREATE_DOCUMENT -> {
         val promise = pendingCreatePromise
@@ -132,5 +133,5 @@ class KyrosFileModule(context: ReactApplicationContext) :
     }
   }
 
-  override fun onNewIntent(intent: Intent?) {}
+  override fun onNewIntent(intent: Intent) {}
 }
