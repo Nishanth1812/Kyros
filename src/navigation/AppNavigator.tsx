@@ -1,33 +1,22 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text } from 'react-native';
 import {
+  DarkTheme,
   DefaultTheme,
   NavigationContainer,
   type Theme,
 } from '@react-navigation/native';
+import { useMemo } from 'react';
+import { Text } from 'react-native';
 
 import AddTransactionScreen from '../screens/AddTransactionScreen';
 import BudgetsScreen from '../screens/BudgetsScreen';
 import DashboardScreen from '../screens/DashboardScreen';
 import DataManagementScreen from '../screens/DataManagementScreen';
 import HistoryScreen from '../screens/HistoryScreen';
-import { colors } from '../theme/theme';
+import { useTheme } from '../theme/ThemeContext';
 import type { RootTabParamList } from './types';
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
-
-const navigationTheme: Theme = {
-  ...DefaultTheme,
-  colors: {
-    ...DefaultTheme.colors,
-    primary: colors.primary,
-    background: colors.background,
-    card: colors.surface,
-    text: colors.text,
-    border: colors.border,
-    notification: colors.expense,
-  },
-};
 
 const tabIcons: Record<keyof RootTabParamList, string> = {
   Dashboard: '▦',
@@ -38,13 +27,31 @@ const tabIcons: Record<keyof RootTabParamList, string> = {
 };
 
 export default function AppNavigator() {
+  const { colors, isDark } = useTheme();
+
+  const navigationTheme = useMemo<Theme>(() => {
+    const base = isDark ? DarkTheme : DefaultTheme;
+    return {
+      ...base,
+      colors: {
+        ...base.colors,
+        primary: colors.primary,
+        background: colors.background,
+        card: colors.surface,
+        text: colors.textPrimary,
+        border: colors.border,
+        notification: colors.expense,
+      },
+    };
+  }, [colors, isDark]);
+
   return (
     <NavigationContainer theme={navigationTheme}>
       <Tab.Navigator
         screenOptions={({ route }) => ({
           headerShown: false,
           tabBarActiveTintColor: colors.primary,
-          tabBarInactiveTintColor: colors.textMuted,
+          tabBarInactiveTintColor: colors.textSecondary,
           tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
           tabBarStyle: {
             backgroundColor: colors.surface,

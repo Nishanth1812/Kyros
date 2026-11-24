@@ -2,7 +2,8 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import type { CategorySpendingBreakdown } from '../lib/analytics';
 import { formatMinorUnits } from '../lib/money';
-import { colors, fontSize, radius, spacing } from '../theme/theme';
+import { useTheme, useThemedStyles } from '../theme/ThemeContext';
+import { type ThemeColors, fontSize, radius, spacing } from '../theme/theme';
 
 const PALETTE = [
   '#0B3D2E', // Primary Forest Green
@@ -24,6 +25,8 @@ export default function CategoryBreakdownChart({
   breakdown,
   totalExpenseMinor,
 }: CategoryBreakdownChartProps) {
+  const styles = useThemedStyles(createStyles);
+  const { colors } = useTheme();
   if (breakdown.length === 0 || totalExpenseMinor === 0) {
     return (
       <View
@@ -95,7 +98,7 @@ export default function CategoryBreakdownChart({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     marginTop: spacing.sm,
   },

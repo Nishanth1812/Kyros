@@ -16,7 +16,8 @@ import { formatMinorUnits, parseAmountToMinorUnits } from '../lib/money';
 import { formatFrequency } from '../lib/recurringEngine';
 import { useTransactions } from '../state/TransactionsContext';
 import type { RecurringFrequency, RecurringTransaction, TransactionType } from '../storage/types';
-import { colors, elevation, fontSize, radius, spacing } from '../theme/theme';
+import { useTheme, useThemedStyles } from '../theme/ThemeContext';
+import { type ThemeColors, elevation, fontSize, radius, spacing } from '../theme/theme';
 
 interface RecurringTransactionsScreenProps {
   onBack?: () => void;
@@ -25,6 +26,8 @@ interface RecurringTransactionsScreenProps {
 const FREQUENCIES: RecurringFrequency[] = ['daily', 'weekly', 'monthly', 'yearly'];
 
 export default function RecurringTransactionsScreen({ onBack }: RecurringTransactionsScreenProps) {
+  const styles = useThemedStyles(createStyles);
+  const { colors } = useTheme();
   const { recurring, activeCategories, addRecurring, deleteRecurring, toggleRecurringActive, applyRecurring } =
     useTransactions();
 
@@ -370,7 +373,7 @@ export default function RecurringTransactionsScreen({ onBack }: RecurringTransac
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8FAFC',

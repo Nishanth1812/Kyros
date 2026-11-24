@@ -3,13 +3,16 @@ import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'rea
 
 import { formatMinorUnits } from '../lib/money';
 import { useTransactions } from '../state/TransactionsContext';
-import { colors, elevation, fontSize, radius, spacing } from '../theme/theme';
+import { useTheme, useThemedStyles } from '../theme/ThemeContext';
+import { type ThemeColors, elevation, fontSize, radius, spacing } from '../theme/theme';
 
 interface RecurringReviewBannerProps {
   onReview?: () => void;
 }
 
 export default function RecurringReviewBanner({ onReview }: RecurringReviewBannerProps) {
+  const styles = useThemedStyles(createStyles);
+  const { colors } = useTheme();
   const { dueRecurring, applyAllDueRecurring } = useTransactions();
   const [isApplying, setIsApplying] = useState(false);
   const [successFeedback, setSuccessFeedback] = useState<string | null>(null);
@@ -87,7 +90,7 @@ export default function RecurringReviewBanner({ onReview }: RecurringReviewBanne
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     backgroundColor: '#FEF3C7',
     borderWidth: 1,

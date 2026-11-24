@@ -13,6 +13,7 @@ import {
   getBudgetStorage,
   getCategoryStorage,
   getDatabaseInstance,
+  getGoalStorage,
   getRecurringStorage,
   getTransactionStorage,
 } from '../lib/database';
@@ -22,9 +23,11 @@ import {
   restoreBackupData,
   type Budget,
   type Category,
-  type KyrosBackupV1,
+  type FinancialGoal,
+  type KyrosBackupV2,
   type NewBudgetInput,
   type NewCategoryInput,
+  type NewGoalInput,
   type NewRecurringInput,
   type NewTransactionInput,
   type RecurringTransaction,
@@ -41,6 +44,7 @@ interface TransactionsContextValue {
   budgets: Budget[];
   recurring: RecurringTransaction[];
   dueRecurring: RecurringTransaction[];
+  goals: FinancialGoal[];
   status: LoadStatus;
   error: string | null;
   /** Re-read transactions, categories, and budgets without replacing lists with a loader. */
@@ -59,11 +63,15 @@ interface TransactionsContextValue {
   toggleRecurringActive: (id: number, isActive: boolean) => Promise<RecurringTransaction>;
   applyRecurring: (id: number, asOfDate?: string) => Promise<{ transaction: Transaction; nextDueDate: string }>;
   applyAllDueRecurring: () => Promise<number>;
+  addGoal: (input: NewGoalInput) => Promise<FinancialGoal>;
+  updateGoal: (id: number, input: Partial<NewGoalInput>) => Promise<FinancialGoal>;
+  deleteGoal: (id: number) => Promise<void>;
+  contributeToGoal: (id: number, deltaMinor: number) => Promise<FinancialGoal>;
   /** Creates or updates the limit for a scope, then refreshes the visible list. */
   saveBudget: (input: NewBudgetInput) => Promise<Budget>;
   /** Deletes the requested row if present; an unknown id is a no-op. */
   deleteBudget: (id: number) => Promise<void>;
-  exportBackup: () => Promise<KyrosBackupV1>;
+  exportBackup: () => Promise<KyrosBackupV2>;
   restoreBackup: (payload: unknown) => Promise<RestoreResult>;
 }
 
@@ -80,6 +88,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [recurring, setRecurring] = useState<RecurringTransaction[]>([]);
+  const [goals, setGoals] = useState<FinancialGoal[]>([]);
   const [status, setStatus] = useState<LoadStatus>('loading');
   const [error, setError] = useState<string | null>(null);
   const hasLoaded = useRef(false);
@@ -88,23 +97,27 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
     if (!silent || !hasLoaded.current) setStatus('loading');
     setError(null);
     try {
-      const [transactionStorage, categoryStorage, budgetStorage, recurringStorage] = await Promise.all([
-        getTransactionStorage(),
-        getCategoryStorage(),
-        getBudgetStorage(),
-        getRecurringStorage(),
-      ]);
-      const [list, categoryList, budgetList, recurringList] = await Promise.all([
+      const [transactionStorage, categoryStorage, budgetStorage, recurringStorage, goalStorage] =
+        await Promise.all([
+          getTransactionStorage(),
+          getCategoryStorage(),
+          getBudgetStorage(),
+          getRecurringStorage(),
+          getGoalStorage(),
+        ]);
+      const [list, categoryList, budgetList, recurringList, goalList] = await Promise.all([
         transactionStorage.listTransactions(),
         categoryStorage.listCategories(undefined, true),
         budgetStorage.listBudgets(),
         recurringStorage.listRecurring(),
+        goalStorage.listGoals(),
       ]);
       hasLoaded.current = true;
       setTransactions(list);
       setCategories(categoryList);
       setBudgets(budgetList);
       setRecurring(recurringList);
+      setGoals(goalList);
       setStatus('ready');
     } catch (cause) {
       setError(toMessage(cause));
@@ -273,6 +286,49 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
     return appliedCount;
   }, [dueRecurring, load]);
 
+  const addGoal = useCallback(
+    async (input: NewGoalInput) => {
+      const storage = await getGoalStorage();
+      const created = await storage.addGoal(input);
+      hasLoaded.current = true;
+      await load(true);
+      return created;
+    },
+    [load]
+  );
+
+  const updateGoal = useCallback(
+    async (id: number, input: Partial<NewGoalInput>) => {
+      const storage = await getGoalStorage();
+      const updated = await storage.updateGoal(id, input);
+      hasLoaded.current = true;
+      await load(true);
+      return updated;
+    },
+    [load]
+  );
+
+  const deleteGoal = useCallback(
+    async (id: number) => {
+      const storage = await getGoalStorage();
+      await storage.deleteGoal(id);
+      hasLoaded.current = true;
+      await load(true);
+    },
+    [load]
+  );
+
+  const contributeToGoal = useCallback(
+    async (id: number, deltaMinor: number) => {
+      const storage = await getGoalStorage();
+      const updated = await storage.contributeToGoal(id, deltaMinor);
+      hasLoaded.current = true;
+      await load(true);
+      return updated;
+    },
+    [load]
+  );
+
   const saveBudget = useCallback(
     async (input: NewBudgetInput) => {
       const storage = await getBudgetStorage();
@@ -320,6 +376,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       budgets,
       recurring,
       dueRecurring,
+      goals,
       status,
       error,
       refresh,
@@ -336,6 +393,10 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       toggleRecurringActive,
       applyRecurring,
       applyAllDueRecurring,
+      addGoal,
+      updateGoal,
+      deleteGoal,
+      contributeToGoal,
       saveBudget,
       deleteBudget,
       exportBackup,
@@ -348,6 +409,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       budgets,
       recurring,
       dueRecurring,
+      goals,
       status,
       error,
       refresh,
@@ -364,6 +426,10 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       toggleRecurringActive,
       applyRecurring,
       applyAllDueRecurring,
+      addGoal,
+      updateGoal,
+      deleteGoal,
+      contributeToGoal,
       saveBudget,
       deleteBudget,
       exportBackup,

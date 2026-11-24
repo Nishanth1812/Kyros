@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -11,19 +12,52 @@ import {
 
 import ScreenHeader from '../components/ScreenHeader';
 import { formatTransactionsToCsv } from '../lib/csvExport';
+import { getSyncStorage } from '../lib/database';
 import { defaultFileBridge } from '../lib/fileBridge';
 import { useTransactions } from '../state/TransactionsContext';
 import { validateBackupPayload } from '../storage/backupValidation';
-import { colors, elevation, fontSize, radius, spacing } from '../theme/theme';
+import type { SyncStorageInfo } from '../storage/types';
+import { useTheme, useThemedStyles } from '../theme/ThemeContext';
+import { type ThemeColors, elevation, fontSize, radius, spacing } from '../theme/theme';
 import CategoryManagementScreen from './CategoryManagementScreen';
 
+function formatSyncTimestamp(timestamp: number): string {
+  if (!timestamp || timestamp <= 0) return 'No changes recorded yet';
+  return new Date(timestamp).toLocaleString();
+}
+
 export default function DataManagementScreen() {
+  const styles = useThemedStyles(createStyles);
+  const { colors, mode, setMode } = useTheme();
   const { transactions, categories, budgets, exportBackup, restoreBackup } = useTransactions();
   const [showCategoryManagement, setShowCategoryManagement] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isExportingCsv, setIsExportingCsv] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [feedback, setFeedback] = useState<{ message: string; isError: boolean } | null>(null);
+  const [syncInfo, setSyncInfo] = useState<SyncStorageInfo | null>(null);
+  const [syncError, setSyncError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const storage = await getSyncStorage();
+        const info = await storage.getSyncInfo();
+        if (!cancelled) {
+          setSyncInfo(info);
+          setSyncError(null);
+        }
+      } catch (err: unknown) {
+        if (!cancelled) {
+          setSyncError(err instanceof Error ? err.message : 'Sync status unavailable.');
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const incomeCount = transactions.filter((t) => t.type === 'income').length;
   const expenseCount = transactions.filter((t) => t.type === 'expense').length;
@@ -171,6 +205,44 @@ export default function DataManagementScreen() {
         </View>
       )}
 
+      {/* Theme Appearance Card */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Appearance</Text>
+        <Text style={styles.cardSubtitle}>
+          Choose how Kyros looks. System follows your device setting.
+        </Text>
+        <View style={styles.themeRow}>
+          {(['system', 'light', 'dark'] as const).map((option) => {
+            const selected = mode === option;
+            const label =
+              option === 'system' ? 'System' : option === 'light' ? 'Light' : 'Dark';
+            return (
+              <Pressable
+                key={option}
+                onPress={() => setMode(option)}
+                accessible
+                accessibilityRole="radio"
+                accessibilityLabel={`${label} theme`}
+                accessibilityState={{ selected }}
+                style={[
+                  styles.themeOption,
+                  selected ? styles.themeOptionSelected : null,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.themeOptionText,
+                    selected ? styles.themeOptionTextSelected : null,
+                  ]}
+                >
+                  {label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+
       {/* Database Overview Card */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Stored Records Overview</Text>
@@ -209,6 +281,28 @@ export default function DataManagementScreen() {
         >
           <Text style={styles.manageCategoriesButtonText}>⚙ Manage Categories</Text>
         </TouchableOpacity>
+      </View>
+
+      {/* Sync Readiness Card */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Sync Readiness (Local Only)</Text>
+        <Text style={styles.cardSubtitle}>
+          Offline-first delta engine status. No network transport is configured; local
+          SQLite remains the source of truth.
+        </Text>
+
+        {syncError ? (
+          <Text style={styles.cardDescription}>{`Sync status unavailable: ${syncError}`}</Text>
+        ) : (
+          <>
+            <Text style={styles.cardDescription}>
+              {`Latest change: ${formatSyncTimestamp(syncInfo?.latestUpdatedAt ?? 0)}`}
+            </Text>
+            <Text style={styles.cardDescription}>
+              {`Deletion markers recorded: ${syncInfo?.tombstoneCount ?? 0}`}
+            </Text>
+          </>
+        )}
       </View>
 
       {/* CSV Spreadsheet Export Card */}
@@ -284,7 +378,7 @@ export default function DataManagementScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,
@@ -421,6 +515,33 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: colors.border,
     marginVertical: spacing.lg,
+  },
+  themeRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  themeOption: {
+    flex: 1,
+    minHeight: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
+  },
+  themeOptionSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.subtleGreen,
+  },
+  themeOptionText: {
+    fontSize: fontSize.body,
+    fontWeight: '600',
+    color: colors.textMuted,
+  },
+  themeOptionTextSelected: {
+    color: colors.primary,
   },
   manageCategoriesButton: {
     minHeight: 48,

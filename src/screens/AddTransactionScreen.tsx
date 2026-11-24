@@ -6,11 +6,14 @@ import ScreenHeader from '../components/ScreenHeader';
 import TransactionForm from '../components/TransactionForm';
 import type { RootTabParamList } from '../navigation/types';
 import { useTransactions } from '../state/TransactionsContext';
-import { spacing } from '../theme/theme';
+import { useTheme, useThemedStyles } from '../theme/ThemeContext';
+import { type ThemeColors, spacing } from '../theme/theme';
 
 type Navigation = BottomTabNavigationProp<RootTabParamList, 'Add'>;
 
 export default function AddTransactionScreen() {
+  const styles = useThemedStyles(createStyles);
+  const { colors } = useTheme();
   const { addTransaction, addCategory, activeCategories } = useTransactions();
   const navigation = useNavigation<Navigation>();
 
@@ -36,7 +39,7 @@ export default function AddTransactionScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: '#F4F7F4',

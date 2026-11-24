@@ -18,7 +18,8 @@ import {
   type TransactionType,
   type ValidationField,
 } from '../storage';
-import { colors, elevation, fontSize, radius, spacing } from '../theme/theme';
+import { useTheme, useThemedStyles } from '../theme/ThemeContext';
+import { type ThemeColors, elevation, fontSize, radius, spacing } from '../theme/theme';
 import CategoryPicker from './CategoryPicker';
 
 type FieldErrors = Partial<Record<ValidationField | 'form', string>>;
@@ -68,6 +69,8 @@ export default function TransactionForm({
   initialValues,
   submitLabel = 'Save transaction',
 }: TransactionFormProps) {
+  const styles = useThemedStyles(createStyles);
+  const { colors } = useTheme();
   const [type, setType] = useState<TransactionType>(
     () => initialValues?.type ?? 'expense'
   );
@@ -356,7 +359,7 @@ export default function TransactionForm({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,

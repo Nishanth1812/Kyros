@@ -3,7 +3,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { formatDisplayDate } from '../lib/dates';
 import { formatMinorUnits } from '../lib/money';
 import type { Transaction } from '../storage';
-import { colors, elevation, fontSize, radius, spacing } from '../theme/theme';
+import { useTheme, useThemedStyles } from '../theme/ThemeContext';
+import { type ThemeColors, elevation, fontSize, radius, spacing } from '../theme/theme';
 
 export default function TransactionRow({
   transaction,
@@ -14,6 +15,8 @@ export default function TransactionRow({
   onEdit: (transaction: Transaction) => void;
   onDelete: (transaction: Transaction) => void;
 }) {
+  const styles = useThemedStyles(createStyles);
+  const { colors } = useTheme();
   const isIncome = transaction.type === 'income';
   const amountText = `${isIncome ? '+' : '−'} ${formatMinorUnits(transaction.amountMinor)}`;
   const readableDate = formatDisplayDate(transaction.date);
@@ -76,7 +79,7 @@ export default function TransactionRow({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'flex-start',
