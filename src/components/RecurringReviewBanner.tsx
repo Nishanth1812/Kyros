@@ -69,7 +69,7 @@ export default function RecurringReviewBanner({ onReview }: RecurringReviewBanne
           accessibilityLabel="Apply all due recurring transactions"
         >
           {isApplying ? (
-            <ActivityIndicator size="small" color={colors.warning} />
+            <ActivityIndicator size="small" color={colors.text} />
           ) : (
             <Text style={styles.applyButtonText}>Apply All</Text>
           )}
