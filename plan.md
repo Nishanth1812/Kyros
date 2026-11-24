@@ -129,15 +129,38 @@ while preserving the local-first SQLite foundation.
   and category analysis.
 - RFC 4180 CSV transaction export via Storage Access Framework.
 
-### 0.6 and later — Connected features, when needed
+### 0.6 — Feature expansion and sync readiness (in progress)
 
-**Goal:** Support account-based access and cloud sync if user needs justify the
-additional service and data-safety costs.
+**Goal:** Expand local financial power with safe category management, recurring
+transaction schedules, savings goals with progress tracking, dynamic theme
+customization, enhanced history search and tagging, and a synchronizable delta
+engine that lays the offline-first cloud sync foundation.
 
-**Scope to evaluate:** Secure account and API design, synchronization while
-offline and online, conflict handling, server-side storage, and migration from
-existing SQLite data. Keep local transaction access available when a connection
-is unavailable.
+**Scope:**
+
+- Category management: safe category rename, archival, and deletion with mandatory
+  transaction reassignment so no transactions are ever orphaned.
+- Recurring transaction engine: daily, weekly, monthly, and yearly recurring
+  templates with next-due-date calculation and 1-tap review and apply on Dashboard.
+- Financial goals tracker: savings targets with deadlines, contributions,
+  completion status, and visual progress bars; 80% warning indicators on monthly
+  budgets.
+- Appearance & customization: system, dark, and light theme modes with WCAG AAA
+  compliant high-contrast palettes; real-time history search and `#tag` filtering.
+- Cloud sync delta engine: SQLite schema v4 with `updated_at`, `is_archived`, and
+  a `deleted_tombstones` table to produce change deltas and resolve conflicts
+  offline-first.
+
+**Release checks:** Verify v3-to-v4 schema migration preserves all existing data;
+verify category deletion reassigns all linked transactions atomically; verify
+recurring transactions compute due dates and apply accurately; verify savings goals
+update progress correctly; test light/dark theme switching across all screens; and
+confirm the sync delta engine generates and applies delta payloads without data loss.
+
+### 0.7 and later — Connected cloud services and multi-device sync
+
+**Goal:** Enable secure multi-device synchronization over cloud backends built on
+top of 0.6's delta engine, while retaining 100% offline-first local capability.
 
 **API compatibility:** Do not add version prefixes to API routes. Evolve the
 API compatibly and plan migrations for changes that cannot be made additively.
