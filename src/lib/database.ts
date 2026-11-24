@@ -3,11 +3,15 @@ import { NativeModules } from 'react-native';
 import {
   createBudgetStorage,
   createCategoryStorage,
+  createGoalStorage,
   createRecurringStorage,
+  createSyncStorage,
   createTransactionStorage,
   type BudgetStorage,
   type CategoryStorage,
+  type GoalStorage,
   type RecurringStorage,
+  type SyncStorage,
   type TransactionStorage,
 } from '../storage';
 import type { SQLiteDatabaseLike, SQLiteValue } from '../storage/types';
@@ -103,6 +107,24 @@ let budgetStoragePromise: Promise<BudgetStorage> | null = null;
 
 let recurringStoragePromise: Promise<RecurringStorage> | null = null;
 
+let goalStoragePromise: Promise<GoalStorage> | null = null;
+
+/** Lazily opens the same database and initializes financial goals storage. */
+export function getGoalStorage(): Promise<GoalStorage> {
+  if (!goalStoragePromise) {
+    goalStoragePromise = (async () => {
+      await getTransactionStorage();
+      const storage = createGoalStorage(await getDatabase());
+      await storage.initialize();
+      return storage;
+    })().catch((error: unknown) => {
+      goalStoragePromise = null;
+      throw error;
+    });
+  }
+  return goalStoragePromise;
+}
+
 /** Lazily opens the same database and initializes recurring transactions storage. */
 export function getRecurringStorage(): Promise<RecurringStorage> {
   if (!recurringStoragePromise) {
@@ -139,4 +161,25 @@ export function getBudgetStorage(): Promise<BudgetStorage> {
 export async function getDatabaseInstance(): Promise<SQLiteDatabaseLike> {
   await getTransactionStorage();
   return getDatabase();
+}
+
+let syncStoragePromise: Promise<SyncStorage> | null = null;
+
+/**
+ * Lazily opens the same initialized database for delta generation, delta
+ * application, and sync readiness reporting.
+ */
+export function getSyncStorage(): Promise<SyncStorage> {
+  if (!syncStoragePromise) {
+    syncStoragePromise = (async () => {
+      await getTransactionStorage();
+      const storage = createSyncStorage(await getDatabase());
+      await storage.initialize();
+      return storage;
+    })().catch((error: unknown) => {
+      syncStoragePromise = null;
+      throw error;
+    });
+  }
+  return syncStoragePromise;
 }

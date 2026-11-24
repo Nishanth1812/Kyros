@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, fontSize, spacing } from '../theme/theme';
+import { useThemedStyles } from '../theme/ThemeContext';
+import { type ThemeColors, fontSize, spacing } from '../theme/theme';
 
 export default function ScreenHeader({
   title,
@@ -9,6 +10,7 @@ export default function ScreenHeader({
   title: string;
   subtitle?: string;
 }) {
+  const styles = useThemedStyles(createStyles);
   return (
     <View style={styles.container}>
       <Text style={styles.title} accessibilityRole="header">
@@ -19,19 +21,20 @@ export default function ScreenHeader({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: spacing.xl,
-  },
-  title: {
-    fontSize: fontSize.title,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  subtitle: {
-    marginTop: spacing.xs,
-    fontSize: fontSize.body,
-    lineHeight: 22,
-    color: colors.textMuted,
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    container: {
+      marginBottom: spacing.xl,
+    },
+    title: {
+      fontSize: fontSize.title,
+      fontWeight: '700',
+      color: colors.text,
+    },
+    subtitle: {
+      marginTop: spacing.xs,
+      fontSize: fontSize.body,
+      lineHeight: 22,
+      color: colors.textMuted,
+    },
+  });

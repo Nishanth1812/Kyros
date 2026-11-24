@@ -184,15 +184,15 @@ function calculateGoalProgress(goal: FinancialGoal, asOfDate?: string): {
 - `test_budget_progress_warning_threshold_triggers_at_80_percent`
 - `test_budget_progress_danger_threshold_triggers_at_100_percent`
 
-- [ ] **Step 1: Write goals and budget warning tests**
+- [x] **Step 1: Write goals and budget warning tests**
   Implement `tests/goals.test.ts` covering progress calculation, contributions, status transitions, and threshold logic.
-- [ ] **Step 2: Implement goalStorage and goalCalculations**
+- [x] **Step 2: Implement goalStorage and goalCalculations**
   Implement `src/storage/goalStorage.ts` and `src/lib/goalCalculations.ts`.
-- [ ] **Step 3: Build GoalCard and FinancialGoalsScreen**
+- [x] **Step 3: Build GoalCard and FinancialGoalsScreen**
   Create accessible `src/components/GoalCard.tsx` and `src/screens/FinancialGoalsScreen.tsx` with target dates, contribution modals, and completion badges.
-- [ ] **Step 4: Update BudgetsScreen with 80% warning indicators**
+- [x] **Step 4: Update BudgetsScreen with 80% warning indicators**
   Enhance `src/screens/BudgetsScreen.tsx` with amber warning badge (`#F59E0B`) at 80% and red alert at 100%.
-- [ ] **Step 5: Run tests and typecheck**
+- [x] **Step 5: Run tests and typecheck**
   Run: `bun test tests/goals.test.ts` and `npm run typecheck`.
 
 ---
@@ -239,15 +239,15 @@ function filterTransactionsByQueryAndTags(
 - `test_filter_by_query_matches_description_category_and_formatted_rupees`
 - `test_filter_by_query_and_tag_combines_filters_accurately`
 
-- [ ] **Step 1: Write theme and search unit tests**
+- [x] **Step 1: Write theme and search unit tests**
   Implement `tests/theme.test.ts` and `tests/transactionSearch.test.ts`.
-- [ ] **Step 2: Implement ThemeContext and dark palette**
+- [x] **Step 2: Implement ThemeContext and dark palette**
   Expand `src/theme/theme.ts` with dark theme tokens and implement `src/theme/ThemeContext.tsx` with `Appearance` listener.
-- [ ] **Step 3: Implement transactionSearch module**
+- [x] **Step 3: Implement transactionSearch module**
   Build `src/lib/transactionSearch.ts` with hashtag parser and case-insensitive query matcher.
-- [ ] **Step 4: Integrate Search and Tags into HistoryScreen**
+- [x] **Step 4: Integrate Search and Tags into HistoryScreen**
   Update `src/screens/HistoryScreen.tsx` with search input, horizontal hashtag chips, and empty result feedback.
-- [ ] **Step 5: Run tests and typecheck**
+- [x] **Step 5: Run tests and typecheck**
   Run: `bun test tests/theme.test.ts tests/transactionSearch.test.ts` and `npm run typecheck`.
 
 ---
@@ -293,15 +293,15 @@ function applySyncDelta(db: SqliteDb, delta: KyrosSyncDeltaV1): Promise<SyncReco
 - `test_backup_v2_exports_all_tables_and_restores_atomically`
 - `test_backup_v2_restores_legacy_v1_backup_file_with_defaults`
 
-- [ ] **Step 1: Write sync engine and backup v2 tests**
+- [x] **Step 1: Write sync engine and backup v2 tests**
   Implement `tests/syncEngine.test.ts` and update `tests/backupValidation.test.ts` & `tests/backupStorage.test.ts`.
-- [ ] **Step 2: Implement syncStorage and syncEngine**
+- [x] **Step 2: Implement syncStorage and syncEngine**
   Implement `src/storage/syncStorage.ts` and `src/storage/syncEngine.ts`.
-- [ ] **Step 3: Update backup validation and storage for Backup V2**
+- [x] **Step 3: Update backup validation and storage for Backup V2**
   Update `src/storage/backupValidation.ts` and `src/storage/backupStorage.ts` supporting `KyrosBackupV2` while accepting `KyrosBackupV1`.
-- [ ] **Step 4: Update DataManagementScreen**
+- [x] **Step 4: Update DataManagementScreen**
   Show sync engine readiness, tombstone counts, and Backup V2 export options.
-- [ ] **Step 5: Run tests and typecheck**
+- [x] **Step 5: Run tests and typecheck**
   Run: `bun test tests/syncEngine.test.ts tests/backupStorage.test.ts` and `npm run typecheck`.
 
 ---
@@ -315,13 +315,15 @@ function applySyncDelta(db: SqliteDb, delta: KyrosSyncDeltaV1): Promise<SyncReco
 - Modify: `README.md`
 - Modify: `plan.md`
 
-- [ ] **Step 1: Update version numbers**
+- [x] **Step 1: Update version numbers**
   Update version in `package.json` (`0.6.0`) and `android/app/build.gradle` (`versionCode 9`, `versionName "0.6.0"`).
-- [ ] **Step 2: Write release notes**
+- [x] **Step 2: Write release notes**
   Create `release-notes/v0.6.0.md` detailing category management, recurring engine, goals, dynamic themes, search/tags, and sync engine.
-- [ ] **Step 3: Update README and product roadmap**
+- [x] **Step 3: Update README and product roadmap**
   Update `README.md` and `plan.md` documenting 0.6.0 features.
-- [ ] **Step 4: Run full test suite and typecheck**
+- [x] **Step 4: Run full test suite and typecheck**
   Run: `bun test` (all tests passing) and `npm run typecheck` (zero TypeScript errors).
-- [ ] **Step 5: Review and update GitHub wiki**
+- [ ] **Step 5: Review/update the GitHub wiki with the release to main**
+  Keep the published wiki aligned with released behavior; the current branch targets
+  `dev`, so publish and verify wiki guidance when this version is released to `main`.
   Update GitHub wiki pages to reflect 0.6.0 behavior, setup, and guidance.

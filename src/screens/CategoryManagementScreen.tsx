@@ -14,13 +14,16 @@ import {
 import ScreenHeader from '../components/ScreenHeader';
 import { useTransactions } from '../state/TransactionsContext';
 import type { Category, TransactionType } from '../storage/types';
-import { colors, elevation, fontSize, radius, spacing } from '../theme/theme';
+import { useTheme, useThemedStyles } from '../theme/ThemeContext';
+import { type ThemeColors, elevation, fontSize, radius, spacing } from '../theme/theme';
 
 interface CategoryManagementScreenProps {
   onBack?: () => void;
 }
 
 export default function CategoryManagementScreen({ onBack }: CategoryManagementScreenProps) {
+  const styles = useThemedStyles(createStyles);
+  const { colors } = useTheme();
   const { categories, transactions, renameCategory, archiveCategory, deleteCategory, addCategory } =
     useTransactions();
 
@@ -400,7 +403,7 @@ export default function CategoryManagementScreen({ onBack }: CategoryManagementS
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8FAFC',

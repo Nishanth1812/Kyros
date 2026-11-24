@@ -21,7 +21,8 @@ import {
 import { formatMinorUnits } from '../lib/money';
 import { summarizeTransactions, type DashboardSummary } from '../lib/summaries';
 import { useTransactions } from '../state/TransactionsContext';
-import { colors, elevation, fontSize, radius, spacing } from '../theme/theme';
+import { useTheme, useThemedStyles } from '../theme/ThemeContext';
+import { type ThemeColors, elevation, fontSize, radius, spacing } from '../theme/theme';
 import AnalyticsScreen from './AnalyticsScreen';
 import RecurringTransactionsScreen from './RecurringTransactionsScreen';
 import RecurringReviewBanner from '../components/RecurringReviewBanner';
@@ -33,6 +34,8 @@ function toMessage(error: unknown): string {
 }
 
 export default function DashboardScreen() {
+  const styles = useThemedStyles(createStyles);
+  const { colors } = useTheme();
   const { transactions, categories, status, error, refresh } = useTransactions();
   const [refreshing, setRefreshing] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
@@ -260,7 +263,7 @@ export default function DashboardScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,

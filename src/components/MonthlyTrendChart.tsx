@@ -2,7 +2,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { MonthlyTrendDataPoint } from '../lib/analytics';
 import { formatMinorUnits } from '../lib/money';
-import { colors, fontSize, radius, spacing } from '../theme/theme';
+import { useTheme, useThemedStyles } from '../theme/ThemeContext';
+import { type ThemeColors, fontSize, radius, spacing } from '../theme/theme';
 
 export interface MonthlyTrendChartProps {
   trends: MonthlyTrendDataPoint[];
@@ -17,6 +18,8 @@ export default function MonthlyTrendChart({
   onSelectMonth,
   selectedMonth,
 }: MonthlyTrendChartProps) {
+  const styles = useThemedStyles(createStyles);
+  const { colors } = useTheme();
   if (trends.length === 0) {
     return (
       <View style={styles.emptyContainer}>
@@ -111,7 +114,7 @@ export default function MonthlyTrendChart({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     marginTop: spacing.sm,
   },

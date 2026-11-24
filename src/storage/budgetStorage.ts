@@ -9,6 +9,7 @@ import {
   TransactionType,
 } from './types';
 import { MAX_AMOUNT_MINOR_UNITS } from './validation';
+import { createSyncStorage, withAtomicTransaction } from './syncStorage';
 
 interface BudgetRow {
   id: number;
@@ -109,6 +110,7 @@ async function assertExpenseCategory(
 }
 
 export function createBudgetStorage(db: SQLiteDatabaseLike): BudgetStorage {
+  const syncStorage = createSyncStorage(db);
   let initialized = false;
   let initPromise: Promise<void> | null = null;
 
@@ -153,24 +155,27 @@ export function createBudgetStorage(db: SQLiteDatabaseLike): BudgetStorage {
       // A select-then-write upsert avoids UPSERT syntax, which older Android
       // SQLite versions do not support. The unique index still guarantees one
       // row per scope.
-      const existing = await db.getFirstAsync<{ id: number }>(
-        'SELECT id FROM budgets WHERE category_id IS ?;',
+      const existing = await db.getFirstAsync<{ id: number; updated_at: number }>(
+        'SELECT id, updated_at FROM budgets WHERE category_id IS ?;',
         categoryId
       );
+      const updatedAt = Math.max(Date.now(), (existing?.updated_at ?? 0) + 1);
 
       if (existing) {
         await db.runAsync(
-          'UPDATE budgets SET amount_minor = ? WHERE id = ?;',
+          'UPDATE budgets SET amount_minor = ?, updated_at = ? WHERE id = ?;',
           amountMinor,
+          updatedAt,
           existing.id
         );
         return { id: existing.id, categoryId, amountMinor };
       }
 
       const result = await db.runAsync(
-        'INSERT INTO budgets (category_id, amount_minor) VALUES (?, ?);',
+        'INSERT INTO budgets (category_id, amount_minor, updated_at) VALUES (?, ?, ?);',
         categoryId,
-        amountMinor
+        amountMinor,
+        updatedAt
       );
       return { id: result.lastInsertRowId, categoryId, amountMinor };
     },
@@ -178,7 +183,17 @@ export function createBudgetStorage(db: SQLiteDatabaseLike): BudgetStorage {
     async deleteBudget(id: number): Promise<void> {
       await ensureInitialized();
       if (!Number.isInteger(id) || id <= 0) return;
-      await db.runAsync('DELETE FROM budgets WHERE id = ?;', id);
+      await syncStorage.initialize();
+      await withAtomicTransaction(db, async () => {
+        const existing = await db.getFirstAsync<{ updated_at: number }>(
+          'SELECT updated_at FROM budgets WHERE id = ?;',
+          id
+        );
+        if (!existing) return;
+        const deletedAt = Math.max(Date.now(), existing.updated_at + 1);
+        await syncStorage.recordTombstone('budget', id, deletedAt);
+        await db.runAsync('DELETE FROM budgets WHERE id = ?;', id);
+      });
     },
   };
 }

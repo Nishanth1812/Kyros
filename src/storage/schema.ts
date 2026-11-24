@@ -135,6 +135,18 @@ CREATE TABLE IF NOT EXISTS deleted_tombstones (
 );
 `;
 
+/**
+ * Key/value preferences (theme mode, future local flags). Created outside the
+ * versioned migrations so it also appears on databases already at v4 without
+ * touching `user_version`.
+ */
+export const CREATE_APP_SETTINGS_TABLE_SQL = `
+CREATE TABLE IF NOT EXISTS app_settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+`;
+
 export const CREATE_V4_INDEXES_SQL = `
 CREATE INDEX IF NOT EXISTS idx_categories_type_archived ON categories(type, is_archived);
 CREATE INDEX IF NOT EXISTS idx_transactions_updated_at ON transactions(updated_at);
@@ -310,4 +322,8 @@ export async function initializeSchema(db: SQLiteDatabaseLike): Promise<void> {
       throw err;
     }
   }
+
+  // Unversioned, additive table: ensure it exists on every initialize, including
+  // databases that reached v4 before settings storage was introduced.
+  await db.execAsync(CREATE_APP_SETTINGS_TABLE_SQL);
 }

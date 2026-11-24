@@ -186,6 +186,36 @@ describe('budget storage', () => {
     }
   });
 
+  test('timestamps budget changes and records deletions for sync', async () => {
+    const { db, budgets, close } = await setup();
+    try {
+      const { food } = await expenseCategoryIds(db);
+      const created = await budgets.saveBudget({ categoryId: food, amountMinor: 1000 });
+      const initial = await db.getFirstAsync<{ updated_at: number }>(
+        'SELECT updated_at FROM budgets WHERE id = ?;', created.id
+      );
+      expect(initial?.updated_at).toBeGreaterThan(0);
+
+      await db.runAsync('UPDATE budgets SET updated_at = 1 WHERE id = ?;', created.id);
+      await budgets.saveBudget({ categoryId: food, amountMinor: 2000 });
+      const updated = await db.getFirstAsync<{ updated_at: number }>(
+        'SELECT updated_at FROM budgets WHERE id = ?;', created.id
+      );
+      expect(updated?.updated_at).toBeGreaterThan(1);
+
+      await budgets.deleteBudget(created.id);
+      const tombstone = await db.getFirstAsync<{ entity_id: number; deleted_at: number }>(
+        `SELECT entity_id, deleted_at FROM deleted_tombstones
+         WHERE entity_type = 'budget' AND entity_id = ?;`,
+        created.id
+      );
+      expect(tombstone?.entity_id).toBe(created.id);
+      expect(tombstone?.deleted_at).toBeGreaterThan(updated?.updated_at ?? 0);
+    } finally {
+      close();
+    }
+  });
+
   test('test_budget_storage_delete_leaves_transactions_and_categories_unchanged', async () => {
     const { db, budgets, close } = await setup();
     try {

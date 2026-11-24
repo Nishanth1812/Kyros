@@ -246,6 +246,34 @@ describe('transaction storage', () => {
     }
   });
 
+  test('stamps transaction edits and records a deletion tombstone', async () => {
+    const { db, close } = createBunSqliteAdapter(':memory:');
+    const storage = createTransactionStorage(db);
+    try {
+      await storage.initialize();
+      const foodId = await builtinCategoryId(db, 'expense', 'Food');
+      const created = await storage.addTransaction({
+        type: 'expense', amountMinor: 100, date: '2026-11-20', description: 'Lunch', categoryId: foodId,
+      });
+      await db.runAsync('UPDATE transactions SET updated_at = 1 WHERE id = ?;', created.id);
+      const updated = await storage.updateTransaction(created.id, {
+        type: 'expense', amountMinor: 200, date: '2026-11-21', description: 'Dinner', categoryId: foodId,
+      });
+      expect(updated.updatedAt).toBeGreaterThan(1);
+
+      await storage.deleteTransaction(created.id);
+      const tombstone = await db.getFirstAsync<{ entity_id: number; deleted_at: number }>(
+        `SELECT entity_id, deleted_at FROM deleted_tombstones
+         WHERE entity_type = 'transaction' AND entity_id = ?;`,
+        created.id
+      );
+      expect(tombstone?.entity_id).toBe(created.id);
+      expect(tombstone?.deleted_at).toBeGreaterThan(updated.updatedAt ?? 0);
+    } finally {
+      close();
+    }
+  });
+
   test('test_delete_transaction_removes_only_requested_row', async () => {
     const { db, close } = createBunSqliteAdapter(':memory:');
     const storage = createTransactionStorage(db);

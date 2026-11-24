@@ -12,7 +12,8 @@ import {
   type TransactionFilters as FilterValues,
 } from '../lib/transactionFilters';
 import type { Category, TransactionType } from '../storage';
-import { colors, fontSize, radius, spacing } from '../theme/theme';
+import { useTheme, useThemedStyles } from '../theme/ThemeContext';
+import { type ThemeColors, fontSize, radius, spacing } from '../theme/theme';
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -46,6 +47,8 @@ export default function TransactionFiltersBar({
   onClear: () => void;
   active: boolean;
 }) {
+  const styles = useThemedStyles(createStyles);
+  const { colors } = useTheme();
   const showDateHint =
     isPartialDate(value.dateFrom) ||
     isPartialDate(value.dateTo) ||
@@ -205,7 +208,7 @@ export default function TransactionFiltersBar({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     marginHorizontal: spacing.lg,
     marginBottom: spacing.md,

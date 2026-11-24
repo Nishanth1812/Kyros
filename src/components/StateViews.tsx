@@ -1,8 +1,11 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, fontSize, radius, spacing } from '../theme/theme';
+import { useTheme, useThemedStyles } from '../theme/ThemeContext';
+import { type ThemeColors, fontSize, radius, spacing } from '../theme/theme';
 
 export function LoadingView({ subject = 'transactions' }: { subject?: string } = {}) {
+  const styles = useThemedStyles(createStyles);
+  const { colors } = useTheme();
   return (
     <View style={styles.centered} accessibilityRole="progressbar" accessibilityLabel={`Loading ${subject}`}>
       <ActivityIndicator size="large" color={colors.primary} />
@@ -20,6 +23,8 @@ export function ErrorView({
   onRetry: () => void;
   subject?: string;
 }) {
+  const styles = useThemedStyles(createStyles);
+  const { colors } = useTheme();
   return (
     <View style={styles.centered}>
       <Text style={[styles.stateIcon, { fontSize: 48, color: colors.expense }]}>ⓘ</Text>
@@ -40,6 +45,8 @@ export function ErrorView({
 }
 
 export function ErrorBanner({ message }: { message: string }) {
+  const styles = useThemedStyles(createStyles);
+  const { colors } = useTheme();
   return (
     <View style={styles.banner} accessibilityRole="alert" accessibilityLiveRegion="polite">
       <Text style={styles.bannerText}>{message}</Text>
@@ -48,6 +55,8 @@ export function ErrorBanner({ message }: { message: string }) {
 }
 
 export function EmptyState({ onAdd }: { onAdd: () => void }) {
+  const styles = useThemedStyles(createStyles);
+  const { colors } = useTheme();
   return (
     <View style={styles.centered}>
       <Text style={[styles.stateIcon, { fontSize: 56, color: colors.primary }]}>▤</Text>
@@ -70,7 +79,7 @@ export function EmptyState({ onAdd }: { onAdd: () => void }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   stateIcon: {
     textAlign: 'center',
   },

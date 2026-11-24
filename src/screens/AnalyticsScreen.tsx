@@ -19,7 +19,8 @@ import {
 } from '../lib/analytics';
 import { formatMinorUnits } from '../lib/money';
 import { useTransactions } from '../state/TransactionsContext';
-import { colors, elevation, fontSize, radius, spacing } from '../theme/theme';
+import { useTheme, useThemedStyles } from '../theme/ThemeContext';
+import { type ThemeColors, elevation, fontSize, radius, spacing } from '../theme/theme';
 
 export interface AnalyticsScreenProps {
   visible?: boolean;
@@ -32,6 +33,8 @@ export default function AnalyticsScreen({
   onClose,
   initialScope,
 }: AnalyticsScreenProps) {
+  const styles = useThemedStyles(createStyles);
+  const { colors } = useTheme();
   const { transactions, categories } = useTransactions();
   const currentScope = getMonthScope(new Date());
   const [scope, setScope] = useState<MonthScope>(() => initialScope ?? currentScope);
@@ -205,7 +208,7 @@ export default function AnalyticsScreen({
   return content;
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,
