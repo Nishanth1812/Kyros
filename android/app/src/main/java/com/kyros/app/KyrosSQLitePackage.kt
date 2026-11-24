@@ -7,7 +7,7 @@ import com.facebook.react.uimanager.ViewManager
 
 class KyrosSQLitePackage : ReactPackage {
   override fun createNativeModules(context: ReactApplicationContext): List<NativeModule> =
-    listOf(KyrosSQLiteModule(context))
+    listOf(KyrosSQLiteModule(context), KyrosFileModule(context))
 
   override fun createViewManagers(context: ReactApplicationContext): List<ViewManager<*, *>> =
     emptyList()

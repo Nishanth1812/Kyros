@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   clearButton: {
-    minHeight: 44,
+    minHeight: 48,
     justifyContent: 'center',
     paddingHorizontal: spacing.sm,
     borderRadius: radius.sm,
@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
     paddingRight: spacing.md,
   },
   chip: {
-    minHeight: 44,
+    minHeight: 48,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: radius.pill,

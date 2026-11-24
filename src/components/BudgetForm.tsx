@@ -314,7 +314,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   option: {
-    minHeight: 44,
+    minHeight: 48,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: radius.pill,
@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
   },
   lockedScope: {
     marginTop: spacing.sm,
-    minHeight: 44,
+    minHeight: 48,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
@@ -427,7 +427,7 @@ const styles = StyleSheet.create({
   },
   deleteButton: {
     marginTop: spacing.md,
-    minHeight: 44,
+    minHeight: 48,
     alignSelf: 'flex-start',
     justifyContent: 'center',
     paddingHorizontal: spacing.sm,

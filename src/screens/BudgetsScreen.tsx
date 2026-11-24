@@ -453,7 +453,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   cardAction: {
-    minHeight: 44,
+    minHeight: 48,
     minWidth: 56,
     borderRadius: radius.sm,
     alignItems: 'center',
@@ -480,7 +480,7 @@ const styles = StyleSheet.create({
   setAction: {
     marginTop: spacing.sm,
     alignSelf: 'flex-start',
-    minHeight: 44,
+    minHeight: 48,
     justifyContent: 'center',
     paddingHorizontal: spacing.sm,
   },

@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   option: {
-    minHeight: 44,
+    minHeight: 48,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: radius.pill,
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
   newCategoryButton: {
     marginTop: spacing.sm,
     alignSelf: 'flex-start',
-    minHeight: 44,
+    minHeight: 48,
     justifyContent: 'center',
     paddingHorizontal: spacing.sm,
   },
@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   createButton: {
-    minHeight: 44,
+    minHeight: 48,
     minWidth: 110,
     borderRadius: radius.md,
     backgroundColor: colors.primary,
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   cancelButton: {
-    minHeight: 44,
+    minHeight: 48,
     justifyContent: 'center',
     paddingHorizontal: spacing.sm,
   },

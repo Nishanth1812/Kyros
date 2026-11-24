@@ -114,3 +114,9 @@ export function getBudgetStorage(): Promise<BudgetStorage> {
   }
   return budgetStoragePromise;
 }
+
+/** Returns the initialized database instance for atomic backup and restore operations. */
+export async function getDatabaseInstance(): Promise<SQLiteDatabaseLike> {
+  await getTransactionStorage();
+  return getDatabase();
+}
