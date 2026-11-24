@@ -70,17 +70,17 @@ function deleteCategoryWithReassignment(
 - `test_delete_category_rejects_mismatched_type_or_archived_target`
 - `test_delete_category_without_transactions_removes_category_and_logs_tombstone`
 
-- [ ] **Step 1: Write schema v4 and category management unit tests**
+- [x] **Step 1: Write schema v4 and category management unit tests**
   Implement comprehensive tests in `tests/categoryManagement.test.ts` matching all test cases above.
-- [ ] **Step 2: Update schema definitions and v4 migration**
+- [x] **Step 2: Update schema definitions and v4 migration**
   Update `src/storage/schema.ts` with v4 DDL, column additions, indexes, and transactional migration logic from v3 to v4.
-- [ ] **Step 3: Implement category management operations**
+- [x] **Step 3: Implement category management operations**
   Implement `renameCategory`, `archiveCategory`, and `deleteCategoryWithReassignment` in `src/storage/categoryStorage.ts`.
-- [ ] **Step 4: Update categories context**
+- [x] **Step 4: Update categories context**
   Update `src/state/categoriesContext.tsx` exposing `renameCategory`, `archiveCategory`, and `deleteCategoryWithReassignment`.
-- [ ] **Step 5: Build CategoryManagementScreen**
+- [x] **Step 5: Build CategoryManagementScreen**
   Create `src/screens/CategoryManagementScreen.tsx` with category list, archive toggle, rename modal, and reassignment-guarded delete dialog (all >= 48dp touch targets).
-- [ ] **Step 6: Run tests and typecheck**
+- [x] **Step 6: Run tests and typecheck**
   Run: `bun test tests/categoryManagement.test.ts tests/schema.test.ts` and `npm run typecheck`.
 
 ---

@@ -15,9 +15,11 @@ import { defaultFileBridge } from '../lib/fileBridge';
 import { useTransactions } from '../state/TransactionsContext';
 import { validateBackupPayload } from '../storage/backupValidation';
 import { colors, elevation, fontSize, radius, spacing } from '../theme/theme';
+import CategoryManagementScreen from './CategoryManagementScreen';
 
 export default function DataManagementScreen() {
   const { transactions, categories, budgets, exportBackup, restoreBackup } = useTransactions();
+  const [showCategoryManagement, setShowCategoryManagement] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isExportingCsv, setIsExportingCsv] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
@@ -133,6 +135,10 @@ export default function DataManagementScreen() {
     }
   };
 
+  if (showCategoryManagement) {
+    return <CategoryManagementScreen onBack={() => setShowCategoryManagement(false)} />;
+  }
+
   return (
     <ScrollView
       style={styles.screen}
@@ -193,6 +199,16 @@ export default function DataManagementScreen() {
             <Text style={styles.statDetail}>configured</Text>
           </View>
         </View>
+
+        <TouchableOpacity
+          style={styles.manageCategoriesButton}
+          onPress={() => setShowCategoryManagement(true)}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel="Manage Categories: rename, archive, or delete with reassignment"
+        >
+          <Text style={styles.manageCategoriesButtonText}>⚙ Manage Categories</Text>
+        </TouchableOpacity>
       </View>
 
       {/* CSV Spreadsheet Export Card */}
@@ -405,5 +421,20 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: colors.border,
     marginVertical: spacing.lg,
+  },
+  manageCategoriesButton: {
+    minHeight: 48,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.md,
+  },
+  manageCategoriesButtonText: {
+    color: colors.primary,
+    fontSize: fontSize.body,
+    fontWeight: '700',
   },
 });

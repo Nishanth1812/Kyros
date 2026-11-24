@@ -33,6 +33,7 @@ type LoadStatus = 'loading' | 'ready' | 'error';
 interface TransactionsContextValue {
   transactions: Transaction[];
   categories: Category[];
+  activeCategories: Category[];
   budgets: Budget[];
   status: LoadStatus;
   error: string | null;
@@ -43,6 +44,9 @@ interface TransactionsContextValue {
   /** Deletes the requested row if present; an unknown id is a no-op. */
   deleteTransaction: (id: number) => Promise<void>;
   addCategory: (input: NewCategoryInput) => Promise<Category>;
+  renameCategory: (id: number, newName: string) => Promise<Category>;
+  archiveCategory: (id: number, isArchived: boolean) => Promise<Category>;
+  deleteCategory: (idToDelete: number, targetCategoryId: number) => Promise<{ reassignedCount: number }>;
   /** Creates or updates the limit for a scope, then refreshes the visible list. */
   saveBudget: (input: NewBudgetInput) => Promise<Budget>;
   /** Deletes the requested row if present; an unknown id is a no-op. */
@@ -78,7 +82,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       ]);
       const [list, categoryList, budgetList] = await Promise.all([
         transactionStorage.listTransactions(),
-        categoryStorage.listCategories(),
+        categoryStorage.listCategories(undefined, true),
         budgetStorage.listBudgets(),
       ]);
       hasLoaded.current = true;
@@ -91,6 +95,11 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       setStatus(hasLoaded.current ? 'ready' : 'error');
     }
   }, []);
+
+  const activeCategories = useMemo(
+    () => categories.filter((c) => !c.isArchived),
+    [categories]
+  );
 
   useEffect(() => {
     void load();
@@ -105,9 +114,6 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       const storage = await getTransactionStorage();
       const created = await storage.addTransaction(input);
       hasLoaded.current = true;
-      // The insert succeeded. A failed refresh is a separate failure reported
-      // through the context's error state; it must not surface as a failed
-      // save or make the caller retry the insertion.
       await load(true);
       return created;
     },
@@ -142,6 +148,39 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       hasLoaded.current = true;
       await load(true);
       return created;
+    },
+    [load]
+  );
+
+  const renameCategory = useCallback(
+    async (id: number, newName: string) => {
+      const storage = await getCategoryStorage();
+      const updated = await storage.renameCategory(id, newName);
+      hasLoaded.current = true;
+      await load(true);
+      return updated;
+    },
+    [load]
+  );
+
+  const archiveCategory = useCallback(
+    async (id: number, isArchived: boolean) => {
+      const storage = await getCategoryStorage();
+      const updated = await storage.archiveCategory(id, isArchived);
+      hasLoaded.current = true;
+      await load(true);
+      return updated;
+    },
+    [load]
+  );
+
+  const deleteCategory = useCallback(
+    async (idToDelete: number, targetCategoryId: number) => {
+      const storage = await getCategoryStorage();
+      const result = await storage.deleteCategoryWithReassignment(idToDelete, targetCategoryId);
+      hasLoaded.current = true;
+      await load(true);
+      return result;
     },
     [load]
   );
@@ -189,6 +228,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
     () => ({
       transactions,
       categories,
+      activeCategories,
       budgets,
       status,
       error,
@@ -197,6 +237,9 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       updateTransaction,
       deleteTransaction,
       addCategory,
+      renameCategory,
+      archiveCategory,
+      deleteCategory,
       saveBudget,
       deleteBudget,
       exportBackup,
@@ -205,6 +248,7 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
     [
       transactions,
       categories,
+      activeCategories,
       budgets,
       status,
       error,
@@ -213,6 +257,9 @@ export function TransactionsProvider({ children }: { children: ReactNode }) {
       updateTransaction,
       deleteTransaction,
       addCategory,
+      renameCategory,
+      archiveCategory,
+      deleteCategory,
       saveBudget,
       deleteBudget,
       exportBackup,

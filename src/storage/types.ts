@@ -5,6 +5,8 @@ export interface Category {
   type: TransactionType;
   name: string;
   isBuiltin: boolean;
+  isArchived: boolean;
+  updatedAt?: number;
 }
 
 export interface NewCategoryInput {
@@ -129,8 +131,14 @@ export interface TransactionStorage {
 
 export interface CategoryStorage {
   initialize(): Promise<void>;
-  listCategories(type?: TransactionType): Promise<Category[]>;
+  listCategories(type?: TransactionType, includeArchived?: boolean): Promise<Category[]>;
   createCategory(input: NewCategoryInput): Promise<Category>;
+  renameCategory(id: number, newName: string): Promise<Category>;
+  archiveCategory(id: number, isArchived: boolean): Promise<Category>;
+  deleteCategoryWithReassignment(
+    idToDelete: number,
+    targetCategoryId: number
+  ): Promise<{ reassignedCount: number }>;
 }
 
 /**
@@ -174,6 +182,13 @@ export interface BudgetStorage {
   saveBudget(input: NewBudgetInput): Promise<Budget>;
   /** Deletes the requested row if present; an unknown id is a no-op. */
   deleteBudget(id: number): Promise<void>;
+}
+
+export interface TombstoneRecord {
+  id: number;
+  entityType: 'transaction' | 'category' | 'budget' | 'recurring' | 'goal';
+  entityId: number;
+  deletedAt: number;
 }
 
 export interface KyrosBackupMetadata {

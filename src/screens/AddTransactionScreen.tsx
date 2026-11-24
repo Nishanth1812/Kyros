@@ -11,7 +11,7 @@ import { spacing } from '../theme/theme';
 type Navigation = BottomTabNavigationProp<RootTabParamList, 'Add'>;
 
 export default function AddTransactionScreen() {
-  const { addTransaction, addCategory, categories } = useTransactions();
+  const { addTransaction, addCategory, activeCategories } = useTransactions();
   const navigation = useNavigation<Navigation>();
 
   return (
@@ -25,7 +25,7 @@ export default function AddTransactionScreen() {
         subtitle="Record income or an expense. Entries stay on this device."
       />
       <TransactionForm
-        categories={categories}
+        categories={activeCategories}
         onCreateCategory={addCategory}
         onSubmit={async (input) => {
           await addTransaction(input);

@@ -209,7 +209,7 @@ describe('schema initialization', () => {
       await initializeSchema(db);
 
       const version = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version;');
-      expect(version?.user_version).toBe(3);
+      expect(version?.user_version).toBe(SCHEMA_VERSION);
       expect(await budgetTableCount(db)).toBe(1);
 
       const rows = await db.getAllAsync<{
@@ -296,7 +296,7 @@ describe('schema initialization', () => {
       await initializeSchema(db);
 
       const version = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version;');
-      expect(version?.user_version).toBe(3);
+      expect(version?.user_version).toBe(SCHEMA_VERSION);
       expect(await budgetTableCount(db)).toBe(1);
 
       expect(await readV2Categories(db)).toEqual(EXPECTED_V2_CATEGORIES);
