@@ -7,23 +7,23 @@
 2. Recurring Transaction Scheduler & Dashboard 1-tap review
 3. Financial Goals Tracker with contribution progress & budget warning indicators
 4. Dynamic Theme System (Dark / Light / System) & Enhanced History Search/Tags
-5. Cloud Sync Delta Engine & Tombstone Tracker (Offline-First Foundation)
+5. Cloud Sync Delta Engine, Tombstone Tracker, & Backup V2
 6. Release Preparation, Documentation, and Build Verification
 
 **Architecture:** Offline-first SQLite schema v4 with `updated_at`, `is_archived`, and `deleted_tombstones`. New domain modules for recurring schedules, financial goals, and sync deltas. React Native dynamic theme provider and accessible components with >= 48dp touch targets. Integer paise precision across all financial amounts.
 
-**Tech Stack:** React Native 0.88, TypeScript, React Navigation, Android SQLite & SAF, Bun tests.
+**Tech Stack:** React Native 0.88, TypeScript 6, React Navigation bottom tabs & modals, Android SQLite & SAF modules, Bun tests, Gradle, GitHub Actions.
 
 **Spec:** `docs/superpowers/specs/2026-11-24-kyros-0-6-expansion-design.md`
 
 ---
 
-## Global Constraints
+## Global Invariants & Constraints
 
-- Android remains the supported platform, minimum Android 7.0 (API 24).
-- All financial calculations use integer minor units (paise).
-- Deleting a category must never leave orphaned transactions; atomic reassignment is mandatory.
-- Zero external charting or state bloat; pure React Native core styling and flexbox.
+- Android minimum version remains Android 7.0 (API 24).
+- All financial calculations use integer minor units (paise). Zero floating-point arithmetic reaches storage.
+- Deleting a category with transactions must never orphan rows: atomic reassignment to an active, same-type category is mandatory.
+- Re-running migrations or running initialization on existing databases must be idempotent and non-destructive.
 - Every interactive element maintains a minimum touch target size of 48×48 dp.
 - Offline-first SQLite is the single source of truth; no network connectivity required.
 
@@ -39,25 +39,47 @@
 - Create: `tests/categoryManagement.test.ts`
 - Modify: `tests/schema.test.ts`
 
-**Scope & Interfaces:**
-- Add `is_archived INTEGER NOT NULL DEFAULT 0` to `categories` table.
-- Add `updated_at INTEGER NOT NULL DEFAULT 0` to `transactions`, `categories`, and `budgets`.
-- Add `deleted_tombstones` table: `(id INTEGER PRIMARY KEY, entity_type TEXT NOT NULL, entity_id INTEGER NOT NULL, deleted_at INTEGER NOT NULL)`.
-- `renameCategory(db, categoryId, newName)`
-- `archiveCategory(db, categoryId, isArchived)`
-- `deleteCategoryWithReassignment(db, categoryIdToDelete, targetCategoryId)`
-- Unit tests verifying: migration v3-to-v4 preserves data; rename rejects duplicates; delete atomically moves all transactions to target category; archive hides from active listing.
+**Interfaces & Signatures:**
+```typescript
+interface Category {
+  id: number;
+  name: string;
+  type: 'income' | 'expense';
+  isBuiltIn: boolean;
+  isArchived: boolean;
+  createdAt: string;
+  updatedAt: number;
+}
 
-- [ ] **Step 1: Write schema and category management tests**
-  Create `tests/categoryManagement.test.ts` covering v4 migration, renaming, archiving, and atomic reassign-delete.
+function renameCategory(db: SqliteDb, categoryId: number, newName: string): Promise<Category>;
+function archiveCategory(db: SqliteDb, categoryId: number, isArchived: boolean): Promise<Category>;
+function deleteCategoryWithReassignment(
+  db: SqliteDb,
+  categoryIdToDelete: number,
+  targetCategoryId: number
+): Promise<{ reassignedCount: number }>;
+```
+
+**Unit Test Requirements (`tests/categoryManagement.test.ts`):**
+- `test_schema_v3_to_v4_migration_preserves_all_data_and_sets_timestamps`
+- `test_v4_migration_rolls_back_atomically_on_failure`
+- `test_rename_category_updates_name_and_timestamp_and_enforces_uniqueness`
+- `test_rename_category_rejects_built_in_categories_and_blank_names`
+- `test_archive_category_toggles_flag_and_excludes_from_active_list`
+- `test_delete_category_reassigns_transactions_atomically_and_logs_tombstone`
+- `test_delete_category_rejects_mismatched_type_or_archived_target`
+- `test_delete_category_without_transactions_removes_category_and_logs_tombstone`
+
+- [ ] **Step 1: Write schema v4 and category management unit tests**
+  Implement comprehensive tests in `tests/categoryManagement.test.ts` matching all test cases above.
 - [ ] **Step 2: Update schema definitions and v4 migration**
-  Implement v4 migration in `src/storage/schema.ts`.
+  Update `src/storage/schema.ts` with v4 DDL, column additions, indexes, and transactional migration logic from v3 to v4.
 - [ ] **Step 3: Implement category management operations**
-  Add rename, archive, and delete-with-reassign functions in `src/storage/categoryStorage.ts`.
-- [ ] **Step 4: Expose actions in categories context**
-  Update `src/state/categoriesContext.tsx`.
+  Implement `renameCategory`, `archiveCategory`, and `deleteCategoryWithReassignment` in `src/storage/categoryStorage.ts`.
+- [ ] **Step 4: Update categories context**
+  Update `src/state/categoriesContext.tsx` exposing `renameCategory`, `archiveCategory`, and `deleteCategoryWithReassignment`.
 - [ ] **Step 5: Build CategoryManagementScreen**
-  Implement accessible category management UI with rename, archive, and delete modals.
+  Create `src/screens/CategoryManagementScreen.tsx` with category list, archive toggle, rename modal, and reassignment-guarded delete dialog (all >= 48dp touch targets).
 - [ ] **Step 6: Run tests and typecheck**
   Run: `bun test tests/categoryManagement.test.ts tests/schema.test.ts` and `npm run typecheck`.
 
@@ -73,27 +95,57 @@
 - Create: `tests/recurringTransactions.test.ts`
 - Modify: `src/screens/DashboardScreen.tsx`
 
-**Scope & Interfaces:**
-- `RecurringTransaction { id: number; amountMinor: number; type: 'income' | 'expense'; categoryId: number; description: string | null; frequency: 'daily' | 'weekly' | 'monthly' | 'yearly'; nextDueDate: string; isActive: boolean; createdAt: string; updatedAt: number }`
-- `calculateNextDueDate(currentDueDate: string, frequency: RecurringFrequency): string`
-- `findDueRecurringTransactions(recurring: RecurringTransaction[], asOfDate: string): RecurringTransaction[]`
-- `applyRecurringTransaction(db, recurringId, date): Promise<Transaction>`
-- Unit tests for recurring due date calculators, frequency advancing, leap year handling, and storage mutations.
+**Interfaces & Signatures:**
+```typescript
+type RecurringFrequency = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
-- [ ] **Step 1: Write recurring transactions tests**
-  Create `tests/recurringTransactions.test.ts` testing due date calculation, scheduling, and transaction generation.
+interface RecurringTransaction {
+  id: number;
+  amountMinor: number;
+  type: 'income' | 'expense';
+  categoryId: number;
+  description: string | null;
+  frequency: RecurringFrequency;
+  nextDueDate: string; // YYYY-MM-DD
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: number;
+}
+
+function calculateNextDueDate(currentDueDate: string, frequency: RecurringFrequency): string;
+function findDueRecurringTransactions(
+  schedules: RecurringTransaction[],
+  asOfDate: string
+): RecurringTransaction[];
+function applyRecurringTransaction(
+  db: SqliteDb,
+  scheduleId: number,
+  applyDate?: string
+): Promise<{ transaction: Transaction; nextDueDate: string }>;
+```
+
+**Unit Test Requirements (`tests/recurringTransactions.test.ts`):**
+- `test_calculate_next_due_date_daily_and_weekly`
+- `test_calculate_next_due_date_monthly_pins_to_month_end_correctly` (Jan 31 -> Feb 28, Feb 28 -> Mar 31)
+- `test_calculate_next_due_date_yearly_handles_leap_years`
+- `test_find_due_recurring_transactions_filters_by_date_and_active_status`
+- `test_apply_recurring_transaction_inserts_transaction_and_advances_due_date`
+- `test_recurring_storage_crud_persists_and_updates_timestamps`
+
+- [ ] **Step 1: Write recurring transactions unit tests**
+  Implement `tests/recurringTransactions.test.ts` covering date arithmetic, leap year logic, and storage operations.
 - [ ] **Step 2: Implement recurringStorage and recurringEngine**
   Implement `src/storage/recurringStorage.ts` and `src/lib/recurringEngine.ts`.
 - [ ] **Step 3: Build RecurringTransactionsScreen**
-  Screen to create, edit, pause, and delete recurring schedules with min 48dp touch targets.
-- [ ] **Step 4: Add RecurringReviewBanner to Dashboard**
-  Banner indicating pending due transactions with "Apply All" and "Review" buttons.
+  Create `src/screens/RecurringTransactionsScreen.tsx` with frequency selectors, amount inputs in rupees/paise, and category pickers.
+- [ ] **Step 4: Build RecurringReviewBanner and integrate into Dashboard**
+  Implement `src/components/RecurringReviewBanner.tsx` with "Apply All" and "Review" actions; embed at top of `DashboardScreen.tsx`.
 - [ ] **Step 5: Run tests and typecheck**
   Run: `bun test tests/recurringTransactions.test.ts` and `npm run typecheck`.
 
 ---
 
-### Task 3: Financial Goals Tracker & Budget Warning Indicators
+### Task 3: Financial Goals Tracker & Budget Warning Alerts
 
 **Files:**
 - Create: `src/storage/goalStorage.ts`
@@ -103,26 +155,49 @@
 - Create: `tests/goals.test.ts`
 - Modify: `src/screens/BudgetsScreen.tsx`
 
-**Scope & Interfaces:**
-- `FinancialGoal { id: number; title: string; targetAmountMinor: number; currentSavedMinor: number; targetDate: string | null; status: 'active' | 'completed' | 'cancelled'; createdAt: string; updatedAt: number }`
-- `calculateGoalProgress(goal: FinancialGoal): { percentage: number; remainingMinor: number; isCompleted: boolean; projectedSavingsPerMonthMinor?: number }`
-- Budget indicators: Display amber warning badge when spending >= 80% and red alert when >= 100%.
-- Unit tests for goal creation, progress calculation, target deadline projection, and budget threshold logic.
+**Interfaces & Signatures:**
+```typescript
+interface FinancialGoal {
+  id: number;
+  title: string;
+  targetAmountMinor: number;
+  currentSavedMinor: number;
+  targetDate: string | null; // YYYY-MM-DD
+  status: 'active' | 'completed' | 'cancelled';
+  createdAt: string;
+  updatedAt: number;
+}
 
-- [ ] **Step 1: Write goals and budget indicator tests**
-  Create `tests/goals.test.ts` testing goal calculations, contributions, completion status, and budget warnings.
+function calculateGoalProgress(goal: FinancialGoal, asOfDate?: string): {
+  percentage: number;
+  remainingMinor: number;
+  isCompleted: boolean;
+  projectedMonthlySavingsMinor?: number;
+};
+```
+
+**Unit Test Requirements (`tests/goals.test.ts`):**
+- `test_calculate_goal_progress_percentages_and_caps`
+- `test_calculate_goal_progress_projected_monthly_savings`
+- `test_goal_storage_crud_and_status_transitions`
+- `test_goal_deposit_and_withdraw_updates_current_saved_and_marks_completed`
+- `test_budget_progress_warning_threshold_triggers_at_80_percent`
+- `test_budget_progress_danger_threshold_triggers_at_100_percent`
+
+- [ ] **Step 1: Write goals and budget warning tests**
+  Implement `tests/goals.test.ts` covering progress calculation, contributions, status transitions, and threshold logic.
 - [ ] **Step 2: Implement goalStorage and goalCalculations**
   Implement `src/storage/goalStorage.ts` and `src/lib/goalCalculations.ts`.
 - [ ] **Step 3: Build GoalCard and FinancialGoalsScreen**
-  Accessible card with progress bar, remaining rupees, and deadline indicator.
+  Create accessible `src/components/GoalCard.tsx` and `src/screens/FinancialGoalsScreen.tsx` with target dates, contribution modals, and completion badges.
 - [ ] **Step 4: Update BudgetsScreen with 80% warning indicators**
-  Add visual amber threshold alert to `BudgetsScreen.tsx`.
+  Enhance `src/screens/BudgetsScreen.tsx` with amber warning badge (`#F59E0B`) at 80% and red alert at 100%.
 - [ ] **Step 5: Run tests and typecheck**
   Run: `bun test tests/goals.test.ts` and `npm run typecheck`.
 
 ---
 
-### Task 4: Dynamic Theme Engine (Dark/Light/System) & Enhanced Search/Tags
+### Task 4: Dynamic Theme Engine (Dark/Light/System) & History Search/Tags
 
 **Files:**
 - Modify: `src/theme/theme.ts`
@@ -132,47 +207,102 @@
 - Create: `tests/theme.test.ts`
 - Create: `tests/transactionSearch.test.ts`
 
-**Scope & Interfaces:**
-- Themes: `'system' | 'light' | 'dark'` with complete high-contrast semantic palettes.
-- `useTheme()` hook providing theme values, dark mode boolean, and `setThemeMode()`.
-- Search & Tag parser: `parseTags(description: string): string[]` and `filterByQueryAndTags(transactions, query, selectedTags)`.
-- Unit tests for color contrast, tag extraction, search filtering across description, amount, and category.
+**Interfaces & Signatures:**
+```typescript
+type ThemeMode = 'system' | 'light' | 'dark';
 
-- [ ] **Step 1: Write theme and search tests**
-  Create `tests/theme.test.ts` and `tests/transactionSearch.test.ts`.
-- [ ] **Step 2: Implement dynamic ThemeContext and dark palette**
-  Expand `src/theme/theme.ts` with dark theme tokens and build `src/theme/ThemeContext.tsx`.
-- [ ] **Step 3: Implement transactionSearch utility**
-  Build search filter and `#tag` extraction in `src/lib/transactionSearch.ts`.
+interface ThemePalette {
+  background: string;
+  surface: string;
+  surfaceElevated: string;
+  textPrimary: string;
+  textSecondary: string;
+  border: string;
+  primary: string;
+  expense: string;
+  income: string;
+  warning: string;
+}
+
+function parseTags(description: string | null): string[];
+function filterTransactionsByQueryAndTags(
+  transactions: Transaction[],
+  categories: Category[],
+  query: string,
+  selectedTag?: string
+): Transaction[];
+```
+
+**Unit Test Requirements (`tests/theme.test.ts`, `tests/transactionSearch.test.ts`):**
+- `test_theme_palettes_provide_wcag_aaa_contrast_for_text`
+- `test_parse_tags_extracts_hashtags_and_ignores_empty_or_special_chars`
+- `test_filter_by_query_matches_description_category_and_formatted_rupees`
+- `test_filter_by_query_and_tag_combines_filters_accurately`
+
+- [ ] **Step 1: Write theme and search unit tests**
+  Implement `tests/theme.test.ts` and `tests/transactionSearch.test.ts`.
+- [ ] **Step 2: Implement ThemeContext and dark palette**
+  Expand `src/theme/theme.ts` with dark theme tokens and implement `src/theme/ThemeContext.tsx` with `Appearance` listener.
+- [ ] **Step 3: Implement transactionSearch module**
+  Build `src/lib/transactionSearch.ts` with hashtag parser and case-insensitive query matcher.
 - [ ] **Step 4: Integrate Search and Tags into HistoryScreen**
-  Add search input and horizontal tag chips to `HistoryScreen.tsx`.
+  Update `src/screens/HistoryScreen.tsx` with search input, horizontal hashtag chips, and empty result feedback.
 - [ ] **Step 5: Run tests and typecheck**
   Run: `bun test tests/theme.test.ts tests/transactionSearch.test.ts` and `npm run typecheck`.
 
 ---
 
-### Task 5: Cloud Sync Delta Engine & Tombstone Tracker (Offline-First Foundation)
+### Task 5: Cloud Sync Delta Engine, Tombstone Tracker, & Backup V2
 
 **Files:**
 - Create: `src/storage/syncEngine.ts`
 - Create: `src/storage/syncStorage.ts`
-- Create: `tests/syncEngine.test.ts`
+- Modify: `src/storage/backupValidation.ts`
+- Modify: `src/storage/backupStorage.ts`
 - Modify: `src/screens/DataManagementScreen.tsx`
+- Create: `tests/syncEngine.test.ts`
+- Modify: `tests/backupStorage.test.ts`
+- Modify: `tests/backupValidation.test.ts`
 
-**Scope & Interfaces:**
-- `SyncDeltaPayload { clientTimestamp: number; lastSyncTimestamp: number; changes: { transactions: Transaction[]; categories: Category[]; budgets: BudgetRecord[]; goals: FinancialGoal[]; recurring: RecurringTransaction[] }; tombstones: TombstoneRecord[] }`
-- `generateSyncDelta(db, lastSyncTimestamp): Promise<SyncDeltaPayload>`
-- `applySyncDelta(db, payload): Promise<SyncReconciliationResult>`
-- Unit tests verifying: delta generation selects only modified/created entities; deletions properly generate tombstones; LWW conflict resolution respects newest `updated_at`.
+**Interfaces & Signatures:**
+```typescript
+interface KyrosSyncDeltaV1 {
+  version: 1;
+  clientTimestamp: number;
+  sinceTimestamp: number;
+  changes: {
+    transactions: Transaction[];
+    categories: Category[];
+    budgets: BudgetRecord[];
+    goals: FinancialGoal[];
+    recurring: RecurringTransaction[];
+  };
+  tombstones: TombstoneRecord[];
+}
 
-- [ ] **Step 1: Write sync engine tests**
-  Create `tests/syncEngine.test.ts` testing delta extraction, tombstone creation on delete, and payload reconciliation.
+function generateSyncDelta(db: SqliteDb, sinceTimestamp: number): Promise<KyrosSyncDeltaV1>;
+function applySyncDelta(db: SqliteDb, delta: KyrosSyncDeltaV1): Promise<SyncReconciliationResult>;
+```
+
+**Unit Test Requirements (`tests/syncEngine.test.ts`):**
+- `test_generate_sync_delta_extracts_entities_updated_after_timestamp`
+- `test_generate_sync_delta_extracts_tombstones_for_deleted_items`
+- `test_apply_sync_delta_inserts_new_records_and_updates_newer_records`
+- `test_apply_sync_delta_preserves_local_edits_when_local_is_newer` (LWW)
+- `test_apply_sync_delta_deletes_records_specified_in_tombstones`
+- `test_backup_v2_exports_all_tables_and_restores_atomically`
+- `test_backup_v2_restores_legacy_v1_backup_file_with_defaults`
+
+- [ ] **Step 1: Write sync engine and backup v2 tests**
+  Implement `tests/syncEngine.test.ts` and update `tests/backupValidation.test.ts` & `tests/backupStorage.test.ts`.
 - [ ] **Step 2: Implement syncStorage and syncEngine**
-  Implement `src/storage/syncStorage.ts` and `src/lib/syncEngine.ts`.
-- [ ] **Step 3: Integrate Sync Status in DataManagementScreen**
-  Display sync engine readiness and tombstone statistics on the Data tab.
-- [ ] **Step 4: Run tests and typecheck**
-  Run: `bun test tests/syncEngine.test.ts` and `npm run typecheck`.
+  Implement `src/storage/syncStorage.ts` and `src/storage/syncEngine.ts`.
+- [ ] **Step 3: Update backup validation and storage for Backup V2**
+  Update `src/storage/backupValidation.ts` and `src/storage/backupStorage.ts` supporting `KyrosBackupV2` while accepting `KyrosBackupV1`.
+- [ ] **Step 4: Update DataManagementScreen**
+  Show sync engine readiness, tombstone counts, and Backup V2 export options.
+- [ ] **Step 5: Run tests and typecheck**
+  Run: `bun test tests/syncEngine.test.ts tests/backupStorage.test.ts` and `npm run typecheck`.
 
 ---
 
@@ -186,12 +316,12 @@
 - Modify: `plan.md`
 
 - [ ] **Step 1: Update version numbers**
-  Update version in `package.json` and `android/app/build.gradle`.
+  Update version in `package.json` (`0.6.0`) and `android/app/build.gradle` (`versionCode 9`, `versionName "0.6.0"`).
 - [ ] **Step 2: Write release notes**
-  Create `release-notes/v0.6.0.md` detailing category management, recurring schedules, financial goals, themes, search, and sync engine.
+  Create `release-notes/v0.6.0.md` detailing category management, recurring engine, goals, dynamic themes, search/tags, and sync engine.
 - [ ] **Step 3: Update README and product roadmap**
-  Update `README.md` and `plan.md` to document 0.6.0 features.
-- [ ] **Step 4: Verify full test suite and typecheck**
-  Run: `bun test` and `npm run typecheck`.
+  Update `README.md` and `plan.md` documenting 0.6.0 features.
+- [ ] **Step 4: Run full test suite and typecheck**
+  Run: `bun test` (all tests passing) and `npm run typecheck` (zero TypeScript errors).
 - [ ] **Step 5: Review and update GitHub wiki**
   Update GitHub wiki pages to reflect 0.6.0 behavior, setup, and guidance.

@@ -1,126 +1,275 @@
-# Kyros 0.6 Feature Expansion Design
+# Kyros 0.6 Feature Expansion Design Specification
 
 ## Intent
 
 Kyros 0.6 expands the application's capabilities across four core pillars:
-1. **Category Management & Recurring Transactions**: Safe renaming, archiving, and deletion of custom categories with transaction reassignment; recurring transaction schedules and automated occurrence application.
-2. **Advanced Budgeting & Financial Goals**: Targeted savings goals with deadline tracking, contributions, and progress visualization; warning threshold indicators on monthly budgets.
-3. **Connected Features & Cloud Sync Architecture**: Synchronizable data structures with revision tracking, tombstones for deletions, delta payload generation, and offline-first conflict resolution.
-4. **Appearance & UI Customization**: System/Dark/Light theme switching with accessible high-contrast palettes, plus full-text description search and tag filtering in history.
+1. **Category Management & Recurring Engine**: Full lifecycle management of custom categories (safe rename, archival, and atomic reassign-on-delete) and recurring transaction schedules with intelligent due-date tracking and 1-tap review application.
+2. **Advanced Budgeting & Financial Goals**: Targeted savings goals with deadline tracking, contribution progress, and projected completion, accompanied by 80% warning and 100% danger indicators on monthly budgets.
+3. **Connected Features & Cloud Sync Architecture**: Synchronizable data structures with entity revision tracking (`updated_at`), tombstones for deletions, delta payload generation, and offline-first conflict reconciliation.
+4. **Appearance & UI Customization**: Dynamic system/dark/light theme switching with WCAG AAA compliant palettes, accompanied by real-time history description search and hashtag (`#tag`) filtering.
 
-All additions preserve Kyros's core invariants: 100% offline-first SQLite operation, integer-paise precision, zero floating-point money calculations, >= 48dp touch targets, and atomic data safety.
+All capabilities maintain Kyros's strict foundational invariants: **100% offline-first local SQLite operation, integer minor unit (paise) precision, atomic database migrations with rollback safety, zero third-party UI/chart bloat, and >= 48dp accessibility touch targets**.
 
 ---
 
-## Architecture and Core Pillars
+## Architecture Overview
 
 ```
-+----------------------------------------------------------------------------------+
-|                                    Kyros 0.6                                     |
-+----------------------------------------------------------------------------------+
-|  1. Category Mgmt       2. Recurring Engine    3. Goals & Budgets    4. Themes   |
-|  - Rename custom cat    - Daily/Weekly/Month   - Target amount       - Dark/Light|
-|  - Archive / unarchive  - 1-tap review & apply - Deadline tracking   - Search/Tag|
-|  - Reassign on delete   - Due date tracker     - Progress bars       - System pref|
-+----------------------------------------------------------------------------------+
-|  5. Cloud Sync Protocol & Delta Engine (Offline-First SQLite Foundation)         |
-|  - Schema v4: updated_at, is_archived, tombstones table                          |
-|  - Delta generation (changes since timestamp) & conflict resolution              |
-+----------------------------------------------------------------------------------+
++---------------------------------------------------------------------------------------------------+
+|                                      Kyros 0.6 Application Layer                                  |
++---------------------------------------------------------------------------------------------------+
+|  UI & Screens:                                                                                    |
+|  - DashboardScreen (Month Navigation, Quick Distribution, Recurring Review Banner)                |
+|  - AnalyticsScreen (6-Month Trends, Category Proportional Bars, Daily Metrics)                    |
+|  - CategoryManagementScreen (Rename Modal, Archive Toggle, Safe Reassignment Delete Modal)        |
+|  - RecurringTransactionsScreen (Schedule Form, Frequency Picker, Active Toggle)                   |
+|  - FinancialGoalsScreen (Goal Progress Cards, Contribution Modal, Deadline Calculator)            |
+|  - HistoryScreen (Real-time Search Bar, Horizontal #Tag Chips, Filter Dialogs)                    |
+|  - DataManagementScreen (JSON v2 Backup/Restore, CSV Export, Sync Delta Status)                   |
++---------------------------------------------------------------------------------------------------+
+|  State Management & Contexts:                                                                     |
+|  - TransactionsContext  - CategoriesContext  - BudgetsContext  - GoalsContext  - RecurringContext  |
+|  - ThemeContext (Dynamic 'system' | 'light' | 'dark' provider with Appearance listener)           |
++---------------------------------------------------------------------------------------------------+
+|  Domain Logic & Engines (src/lib/):                                                               |
+|  - recurringEngine.ts (Date calculations, month-end pinning, catch-up generators)                 |
+|  - goalCalculations.ts (Progress percentages, required monthly savings, status transitions)       |
+|  - transactionSearch.ts (Case-insensitive tokenized search, hashtag extractors)                  |
+|  - syncEngine.ts (Delta generation, LWW conflict reconciler, tombstone recorder)                  |
+|  - analytics.ts & csvExport.ts (Month scopes, RFC 4180 serializers)                               |
++---------------------------------------------------------------------------------------------------+
+|  Storage & Data Persistence (src/storage/ - SQLite Schema v4):                                    |
+|  - transactions (id, amount_minor, type, category_id, date, description, created_at, updated_at)  |
+|  - categories (id, name, type, is_built_in, is_archived, created_at, updated_at)                   |
+|  - budgets (id, scope_type, category_id, limit_minor, created_at, updated_at)                     |
+|  - recurring_transactions (id, amount_minor, type, category_id, description, frequency, ...)     |
+|  - financial_goals (id, title, target_amount_minor, current_saved_minor, target_date, status, ...) |
+|  - deleted_tombstones (id, entity_type, entity_id, deleted_at)                                    |
++---------------------------------------------------------------------------------------------------+
 ```
 
 ---
 
-## 1. Category Management & Recurring Transactions
+## Database Architecture (Schema v4)
 
-### 1.1 Category Management
-- **Safe Rename**: Custom categories can be renamed at any time. Renaming preserves category ID and updates all linked transactions and category budgets immediately.
-- **Archival**: Custom categories can be marked `is_archived = 1`. Archived categories are hidden from the Add/Edit transaction pickers, but remain visible in historical reports, charts, and transaction history.
-- **Safe Deletion with Reassignment**: Deleting a custom category requires selecting an active replacement category of the same type. All transactions referencing the old category ID are re-assigned in a single atomic SQLite transaction before the category row is removed. Built-in categories cannot be deleted or renamed.
+### DDL and Schema v4 Definition
 
-### 1.2 Recurring Transactions
-- Users can register recurring templates for recurring income (e.g., monthly salary, stipend) or recurring expenses (e.g., rent, gym, subscriptions).
-- Schema:
-  - `frequency`: `'daily' | 'weekly' | 'monthly' | 'yearly'`
-  - `amount_minor`: integer paise
-  - `category_id`: foreign key
-  - `next_due_date`: `YYYY-MM-DD`
-  - `is_active`: `1` (active) or `0` (paused)
-- **Review and Apply**: When the app opens, an alert banner on the Dashboard identifies pending due transactions. Users can apply them with 1 tap or dismiss/snooze them. Applied transactions enter the standard `transactions` table with today's date, advancing `next_due_date`.
+Upgrading from schema v3 to v4 adds timestamps, archival status, recurring transactions, financial goals, and deletion tombstones.
 
----
+```sql
+-- Existing tables altered with new columns:
+ALTER TABLE categories ADD COLUMN is_archived INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE categories ADD COLUMN updated_at INTEGER NOT NULL DEFAULT 0;
 
-## 2. Advanced Budgeting & Financial Goals
+ALTER TABLE transactions ADD COLUMN updated_at INTEGER NOT NULL DEFAULT 0;
 
-### 2.1 Savings Goals Tracker
-- Users define savings goals (e.g., "Emergency Fund", "Down Payment", "Vacation").
-- Fields:
-  - `title`: string (1-60 chars)
-  - `target_amount_minor`: integer paise (> 0)
-  - `current_saved_minor`: integer paise (>= 0)
-  - `target_date`: `YYYY-MM-DD` (optional target deadline)
-  - `status`: `'active' | 'completed' | 'cancelled'`
-- Visual progress bar indicates percentage saved, remaining rupees to reach the target, and daily/monthly savings required to hit the deadline.
+ALTER TABLE budgets ADD COLUMN updated_at INTEGER NOT NULL DEFAULT 0;
 
-### 2.2 Budget Warning Thresholds
-- On the Budgets tab, visual indicators warn users when spending hits 80% (Warning / Amber) or exceeds 100% (Danger / Red) of the monthly limit.
+-- New Table: recurring_transactions
+CREATE TABLE IF NOT EXISTS recurring_transactions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  amount_minor INTEGER NOT NULL CHECK (amount_minor > 0),
+  type TEXT NOT NULL CHECK (type IN ('income', 'expense')),
+  category_id INTEGER NOT NULL REFERENCES categories(id) ON DELETE RESTRICT,
+  description TEXT CHECK (description IS NULL OR length(description) <= 120),
+  frequency TEXT NOT NULL CHECK (frequency IN ('daily', 'weekly', 'monthly', 'yearly')),
+  next_due_date TEXT NOT NULL CHECK (length(next_due_date) = 10),
+  is_active INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0, 1)),
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at INTEGER NOT NULL DEFAULT 0
+);
 
----
+-- New Table: financial_goals
+CREATE TABLE IF NOT EXISTS financial_goals (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL CHECK (length(trim(title)) > 0 AND length(title) <= 60),
+  target_amount_minor INTEGER NOT NULL CHECK (target_amount_minor > 0),
+  current_saved_minor INTEGER NOT NULL DEFAULT 0 CHECK (current_saved_minor >= 0),
+  target_date TEXT CHECK (target_date IS NULL OR length(target_date) = 10),
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'completed', 'cancelled')),
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at INTEGER NOT NULL DEFAULT 0
+);
 
-## 3. Connected Features & Cloud Sync Engine
+-- New Table: deleted_tombstones
+CREATE TABLE IF NOT EXISTS deleted_tombstones (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  entity_type TEXT NOT NULL CHECK (entity_type IN ('transaction', 'category', 'budget', 'recurring', 'goal')),
+  entity_id INTEGER NOT NULL,
+  deleted_at INTEGER NOT NULL
+);
 
-### 3.1 Synchronizable Schema (v4 Migration)
-- Add `updated_at INTEGER NOT NULL` (millisecond timestamp) to `transactions`, `categories`, and `budgets`.
-- Add `deleted_tombstones` table:
-  - `id INTEGER PRIMARY KEY AUTOINCREMENT`
-  - `entity_type TEXT NOT NULL` (`'transaction' | 'category' | 'budget' | 'goal' | 'recurring'`)
-  - `entity_id INTEGER NOT NULL`
-  - `deleted_at INTEGER NOT NULL`
-- Every delete operation inserts a tombstone record so deletions synchronize correctly across devices.
+-- Indexes for high-frequency queries
+CREATE INDEX IF NOT EXISTS idx_categories_type_archived ON categories(type, is_archived);
+CREATE INDEX IF NOT EXISTS idx_transactions_updated_at ON transactions(updated_at);
+CREATE INDEX IF NOT EXISTS idx_recurring_due_active ON recurring_transactions(is_active, next_due_date);
+CREATE INDEX IF NOT EXISTS idx_goals_status ON financial_goals(status);
+CREATE INDEX IF NOT EXISTS idx_tombstones_deleted_at ON deleted_tombstones(deleted_at);
+```
 
-### 3.2 Delta Serialization & Conflict Resolution
-- `generateSyncDelta(lastSyncTimestamp)`: exports records created or updated after `lastSyncTimestamp` along with tombstones.
-- `applySyncDelta(payload)`: applies remote changes using Last-Write-Wins (LWW) resolution based on `updated_at`, without ever overwriting a newer local edit.
-
----
-
-## 4. Appearance & UI Customization
-
-### 4.1 Theme System (Dark / Light / System)
-- Theme modes: `'system' | 'light' | 'dark'`.
-- Dynamic `ThemeProvider` and `useTheme()` hook delivering semantic tokens:
-  - Backgrounds, surfaces, cards, borders, text primary/secondary, accents, status colors.
-  - WCAG AAA compliance for text contrast on dark backgrounds.
-- Preference persisted in device storage.
-
-### 4.2 Enhanced Transaction Search & Tags
-- Real-time search filter on `HistoryScreen`:
-  - Matches case-insensitive substrings in descriptions and category names.
-  - Supports `#tag` extraction (e.g., `#groceries`, `#trip2026`) with quick-filter tag chips.
+### Migration Safety & Invariants
+1. **Migration Transactionality**: Upgrades from v1, v2, or v3 execute within `BEGIN IMMEDIATE ... COMMIT`. Any failure (e.g., disk I/O, constraint error) immediately issues `ROLLBACK`, leaving existing database tables and `PRAGMA user_version` completely untouched.
+2. **Backfill Timestamps**: For existing rows during migration, `updated_at` is seeded with the epoch millisecond equivalent of `created_at` (or `Date.now()` if unparseable).
+3. **Idempotence**: Running `initializeSchema` repeatedly on an already migrated v4 database is an idempotent no-op that preserves user version 4.
 
 ---
 
-## Delivery Slices
+## Pillar 1: Category Management & Reassignment Engine
 
-1. **Slice 1: Schema Migration v4, Category Management, & Reassignment Engine**
-   - Migration v4 (`is_archived`, `updated_at`, `deleted_tombstones`, `recurring_transactions`, `financial_goals`).
-   - Category rename, archive, and atomic reassign-delete in `categoryStorage.ts`.
-   - Category management screen & modals.
+### 1.1 Category State Machine & Lifecycle
+- **Built-in Categories** (`is_built_in = 1`): Permanent fixtures seeded on database creation (e.g., "Other", "Salary", "Food"). Cannot be renamed, deleted, or archived.
+- **Custom Categories** (`is_built_in = 0`): Full user control:
+  - **Rename**: Must be non-blank, trimmed, <= 40 characters, and case-insensitively unique for the given type (`income` or `expense`).
+  - **Archive**: Toggles `is_archived` between `0` and `1`. Archived categories are hidden from the transaction creation/edit dropdowns, but remain visible in History filters, past reports, and category management.
+  - **Safe Delete with Reassignment**:
+    - Deleting a category that has 0 transactions simply deletes the category row and logs a tombstone.
+    - Deleting a category with > 0 linked transactions **requires** specifying a `targetCategoryId`.
+    - Constraints on `targetCategoryId`: Must exist, must NOT be archived, must match the same `type` (`income` or `expense`), and must not be the category being deleted.
+    - Atomic Execution: Inside a single SQLite transaction:
+      ```sql
+      UPDATE transactions SET category_id = ?targetCategoryId, updated_at = ?now WHERE category_id = ?categoryIdToDelete;
+      DELETE FROM budgets WHERE category_id = ?categoryIdToDelete;
+      DELETE FROM categories WHERE id = ?categoryIdToDelete;
+      INSERT INTO deleted_tombstones (entity_type, entity_id, deleted_at) VALUES ('category', ?categoryIdToDelete, ?now);
+      ```
 
-2. **Slice 2: Recurring Transaction Engine & Dashboard Review Flow**
-   - Recurring storage module & due date calculation engine.
-   - Recurring transaction manager screen & dashboard due review banner.
+---
 
-3. **Slice 3: Financial Goals Tracker & Budget Warning Thresholds**
-   - Savings goals storage, progress calculator, and goal creation/management screens.
-   - 80% warning and 100% danger indicators on budget progress cards.
+## Pillar 2: Recurring Transaction Scheduler & Engine
 
-4. **Slice 4: Dynamic Theme Engine (Dark/Light) & Tag Search**
-   - Theme context with dark/light palettes, system scheme listener, and user toggle.
-   - Real-time search and hashtag filter chips in History screen.
+### 2.1 Scheduling Engine (`recurringEngine.ts`)
+- **Frequencies**: `'daily' | 'weekly' | 'monthly' | 'yearly'`.
+- **Date Math & Month-End Pinning**:
+  - For `'monthly'` recurring on the 31st: If next month has 30 days (e.g. April 30), or February (28/29), clamp to the last valid day of that month (`YYYY-MM-28/29/30`) without skipping months.
+  - Leap year handling: February 29 advances to February 28 on non-leap years.
+- **Catch-up Generation**:
+  - `findDueRecurringTransactions(schedules: RecurringTransaction[], asOfDate: string): DueRecurringItem[]` identifies schedules where `next_due_date <= asOfDate` and `is_active = 1`.
+  - When the user reviews and clicks "Apply", the engine:
+    1. Inserts a standard record into `transactions` with `date = next_due_date` (or `asOfDate`).
+    2. Advances the schedule's `next_due_date` by its frequency interval.
+    3. If `next_due_date` is still in the past (e.g. app was unopened for 2 months), it advances sequentially to prevent infinite loop spam, or queues multi-occurrences with explicit user confirmation.
 
-5. **Slice 5: Cloud Sync Delta Engine & Tombstone Tracker**
-   - Tombstone recording, delta payload generator, and sync reconciliation logic with comprehensive unit tests.
+### 2.2 Dashboard Review Banner
+- Located above the summary tiles on `DashboardScreen`.
+- If due recurring transactions exist: Shows a high-contrast card: *"2 recurring transactions due (₹15,000.00)"* with two actions:
+  - **Apply All**: Instantly creates the transactions and updates due dates.
+  - **Review**: Opens a modal list allowing individual confirmation, date adjustments, or snoozing.
 
-6. **Slice 6: Release Preparation, Documentation, and Build Verification**
-   - Version bump to 0.6.0, release notes, README updates, full test verification, and wiki documentation.
+---
+
+## Pillar 3: Financial Goals Tracker & Budget Warning Alerts
+
+### 3.1 Financial Goals Domain Logic (`goalCalculations.ts`)
+- Fields: `title`, `targetAmountMinor`, `currentSavedMinor`, `targetDate` (optional), `status`.
+- Calculations:
+  - `percentage = Math.min(100, Math.floor((currentSavedMinor / targetAmountMinor) * 100))`
+  - `remainingMinor = Math.max(0, targetAmountMinor - currentSavedMinor)`
+  - `projectedMonthlySavingsMinor`: If `targetDate` is set and in the future, calculates `remainingMinor / monthsRemaining`.
+- State transitions:
+  - Adding savings increases `currentSavedMinor`.
+  - If `currentSavedMinor >= targetAmountMinor`, status automatically transitions to `'completed'`.
+  - User can manually deposit, withdraw, or cancel a goal.
+
+### 3.2 Budget Warning Thresholds
+- On `BudgetsScreen`:
+  - `< 80%`: Normal status (Theme Primary / Green).
+  - `80% - 99.9%`: **Warning state** — Amber badge and progress tint (`#F59E0B`) with text: *"Approaching limit (85% used)"*.
+  - `>= 100%`: **Danger / Overspent state** — Red alert (`#EF4444`) with exact overspent amount.
+
+---
+
+## Pillar 4: Dynamic Theme System & History Tag Search
+
+### 4.1 Theme System (`ThemeContext.tsx`)
+- Supported Modes: `'system' | 'light' | 'dark'`.
+- Persisted in SQLite settings / local preferences.
+- When set to `'system'`, listens to `Appearance.addChangeListener` for instant system mode transitions without requiring an app reload.
+- Color Tokens Palette:
+  | Token | Light Theme | Dark Theme (WCAG AAA) |
+  |---|---|---|
+  | `background` | `#F8FAFC` | `#0F172A` |
+  | `surface` | `#FFFFFF` | `#1E293B` |
+  | `surfaceElevated` | `#FFFFFF` | `#334155` |
+  | `textPrimary` | `#0F172A` | `#F8FAFC` |
+  | `textSecondary` | `#64748B` | `#94A3B8` |
+  | `border` | `#E2E8F0` | `#334155` |
+  | `primary` | `#2563EB` | `#3B82F6` |
+  | `expense` | `#DC2626` | `#EF4444` |
+  | `income` | `#16A34A` | `#22C55E` |
+  | `warning` | `#D97706` | `#F59E0B` |
+
+### 4.2 Enhanced History Search & Hashtags (`transactionSearch.ts`)
+- Real-time tokenized search bar at top of `HistoryScreen`.
+- Substring search across `description`, `categoryName`, and formatted amount.
+- **Hashtag parser**: Extracts `#word` tokens from transaction descriptions.
+- Dynamic tag chips rendered horizontally above the transaction list: tapping a tag chip filters history to transactions matching that hashtag.
+
+---
+
+## Pillar 5: Cloud Sync Architecture & Tombstones
+
+### 5.1 Tombstone Recording
+Whenever any entity (`transaction`, `category`, `budget`, `recurring`, `goal`) is deleted, a record is added to `deleted_tombstones`:
+```typescript
+interface TombstoneRecord {
+  id: number;
+  entityType: 'transaction' | 'category' | 'budget' | 'recurring' | 'goal';
+  entityId: number;
+  deletedAt: number; // epoch ms
+}
+```
+
+### 5.2 Delta Synchronization Protocol (`KyrosSyncDeltaV1`)
+```typescript
+interface KyrosSyncDeltaV1 {
+  version: 1;
+  clientTimestamp: number;
+  sinceTimestamp: number;
+  changes: {
+    transactions: Transaction[];
+    categories: Category[];
+    budgets: BudgetRecord[];
+    goals: FinancialGoal[];
+    recurring: RecurringTransaction[];
+  };
+  tombstones: TombstoneRecord[];
+}
+```
+- **Reconciliation Engine (`syncEngine.ts`)**:
+  - Uses Last-Write-Wins (LWW) conflict resolution comparing `updated_at`.
+  - Applying a delta is idempotent: applying the same delta multiple times produces identical database state.
+  - Tombstones take precedence over older entity records (`deletedAt >= record.updated_at`).
+
+---
+
+## Backup Format Evolution (`KyrosBackupV2`)
+
+To ensure 100% backward compatibility, `KyrosBackupV2` extends `KyrosBackupV1`:
+- If restoring a `KyrosBackupV1` file (from Kyros 0.4 or 0.5):
+  - Validates according to V1 rules.
+  - Automatically seeds missing fields (`is_archived = 0`, `updated_at = created_at`, empty goals, empty recurring).
+- If exporting from Kyros 0.6:
+  - Produces `KyrosBackupV2` including `recurring`, `goals`, `is_archived`, and `updated_at`.
+
+---
+
+## Delivery Tasks and Milestones
+
+1. **Task 1: Schema Migration v4, Category Management, & Reassignment Engine**
+2. **Task 2: Recurring Transaction Scheduler & Dashboard 1-Tap Review**
+3. **Task 3: Financial Goals Tracker & Budget Warning Alerts**
+4. **Task 4: Dynamic Theme Engine (Dark/Light/System) & History Search/Tags**
+5. **Task 5: Cloud Sync Delta Engine, Tombstones, & Backup V2**
+6. **Task 6: Release Preparation, Documentation, and Build Verification**
+
+---
+
+## Release Acceptance Criteria
+
+1. **Schema Integrity**: Existing databases from 0.1, 0.2, 0.3, 0.4, and 0.5 upgrade to v4 without error or data alteration.
+2. **Category Safety**: Deleting a category with transactions forces reassignment; transactions and reports show the reassigned category.
+3. **Recurring Precision**: Due recurring items calculate accurate next dates across month boundaries and leap years, and generate valid transactions with exact paise.
+4. **Goal Calculations**: Savings goals calculate progress percentages and monthly savings accurately using integer arithmetic.
+5. **Theme Quality**: Full dark mode and light mode tested with high contrast across every screen; system theme changes apply dynamically.
+6. **Sync & Backup**: Sync delta serializes all modifications and deletions; Backup V2 exports complete state and restores V1 and V2 backups atomically.
+7. **Test Coverage**: All unit tests pass in Bun (`bun test`), TypeScript check passes cleanly (`npm run typecheck`), and native Android APK builds without error.
