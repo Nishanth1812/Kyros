@@ -247,7 +247,14 @@ export default function RecurringTransactionsScreen({ navigation }: Props) {
 
       {/* Add Recurring Modal */}
       {showAddModal && (
-        <Modal visible={true} transparent={true} animationType="fade">
+        <Modal
+          visible={true}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => {
+            if (!isSubmitting) setShowAddModal(false);
+          }}
+        >
           <View style={styles.modalOverlay}>
             <View style={styles.modalCard}>
               <ScrollView keyboardShouldPersistTaps="handled">

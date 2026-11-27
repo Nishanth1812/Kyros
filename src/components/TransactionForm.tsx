@@ -18,6 +18,7 @@ import {
   type TransactionType,
   type ValidationField,
 } from '../storage';
+import { touchTargetStyle } from '../theme/layout';
 import { useTheme, useThemedStyles } from '../theme/ThemeContext';
 import { type ThemeColors, elevation, fontSize, radius, spacing } from '../theme/theme';
 import CategoryPicker from './CategoryPicker';
@@ -389,8 +390,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     gap: spacing.sm,
   },
   segmentOption: {
+    ...touchTargetStyle,
     flex: 1,
-    minHeight: 48,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
@@ -455,6 +456,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.danger,
   },
   submitButton: {
+    ...touchTargetStyle,
     marginTop: spacing.xl,
     minHeight: 52,
     borderRadius: radius.md,

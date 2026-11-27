@@ -264,7 +264,14 @@ export default function CategoryManagementScreen({ navigation }: Props) {
 
       {/* Rename Modal */}
       {editingCategory && (
-        <Modal visible={true} transparent={true} animationType="fade">
+        <Modal
+          visible={true}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => {
+            if (!isSubmitting) setEditingCategory(null);
+          }}
+        >
           <View style={styles.modalOverlay}>
             <View style={styles.modalCard}>
               <Text style={styles.modalTitle}>Rename Category</Text>
@@ -306,7 +313,14 @@ export default function CategoryManagementScreen({ navigation }: Props) {
 
       {/* Delete with Reassignment Modal */}
       {deletingCategory && (
-        <Modal visible={true} transparent={true} animationType="fade">
+        <Modal
+          visible={true}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => {
+            if (!isSubmitting) setDeletingCategory(null);
+          }}
+        >
           <View style={styles.modalOverlay}>
             <View style={styles.modalCard}>
               <Text style={styles.modalTitle}>Delete Category: {deletingCategory.name}</Text>
@@ -365,7 +379,14 @@ export default function CategoryManagementScreen({ navigation }: Props) {
 
       {/* Add New Category Modal */}
       {showAddModal && (
-        <Modal visible={true} transparent={true} animationType="fade">
+        <Modal
+          visible={true}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => {
+            if (!isSubmitting) setShowAddModal(false);
+          }}
+        >
           <View style={styles.modalOverlay}>
             <View style={styles.modalCard}>
               <Text style={styles.modalTitle}>Add {selectedType === 'expense' ? 'Expense' : 'Income'} Category</Text>
