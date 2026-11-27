@@ -20,9 +20,9 @@ stored as integer paise. No account, network, or backend is required.
 - **Explicit restore confirmation:** view record counts and export dates before
   restoring, with an option to back up existing data before replacing it.
 - **Categories:** built-in income and expense categories plus your own custom
-  categories can be selected when adding or editing a transaction. Rename and
-  archive custom categories from Add → Manage Categories; delete them with transaction
-  and schedule reassignment.
+  categories can be selected when adding or editing a transaction. Add, rename,
+  or delete categories from Add → Edit categories. Deletion reassigns
+  transactions and schedules and removes the category's budget.
 - **Edit and delete:** correct an entry in place; deleting asks for confirmation
   and never removes its category or the other transactions.
 - **History filters:** narrow the newest-first list by type, category, and an

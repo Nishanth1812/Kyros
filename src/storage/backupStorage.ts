@@ -287,21 +287,23 @@ export async function restoreBackupData(
       );
     }
 
-    // Ensure all standard built-in categories exist so the app remains fully
-    // operable even when the backup predates them.
-    for (const { type, name } of BUILTIN_CATEGORIES) {
-      await db.runAsync(
-        `INSERT INTO categories (type, name, is_builtin, is_archived, updated_at)
+    // Older backups predate editable built-in categories.
+    const originalBackup = typeof rawBackup === 'string' ? JSON.parse(rawBackup) : rawBackup;
+    if ((originalBackup as { meta: { version: number } }).meta.version === 1) {
+      for (const { type, name } of BUILTIN_CATEGORIES) {
+        await db.runAsync(
+          `INSERT INTO categories (type, name, is_builtin, is_archived, updated_at)
          SELECT ?, ?, 1, 0, ?
          WHERE NOT EXISTS (
            SELECT 1 FROM categories WHERE type = ? AND name = ? COLLATE NOCASE
          );`,
-        type,
-        name,
-        now,
-        type,
-        name
-      );
+          type,
+          name,
+          now,
+          type,
+          name
+        );
+      }
     }
   };
 

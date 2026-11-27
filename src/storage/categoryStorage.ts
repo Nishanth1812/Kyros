@@ -125,14 +125,6 @@ export function createCategoryStorage(db: SQLiteDatabaseLike): CategoryStorage {
       if (!existing) {
         throw new Error(`Category ${id} not found.`);
       }
-      if (existing.is_builtin === 1) {
-        throw new CategoryValidationError([
-          {
-            field: 'name',
-            message: 'Built-in categories cannot be renamed.',
-          },
-        ]);
-      }
 
       const { name: validatedName } = assertValidCategoryInput({ type: existing.type, name: newName });
 
@@ -163,7 +155,7 @@ export function createCategoryStorage(db: SQLiteDatabaseLike): CategoryStorage {
         id,
         type: existing.type,
         name: validatedName,
-        isBuiltin: false,
+        isBuiltin: existing.is_builtin === 1,
         isArchived: existing.is_archived === 1,
         updatedAt: now,
       };
@@ -179,12 +171,9 @@ export function createCategoryStorage(db: SQLiteDatabaseLike): CategoryStorage {
       if (!existing) {
         throw new Error(`Category ${id} not found.`);
       }
-      if (existing.is_builtin === 1) {
+      if (existing.is_builtin === 1 && isArchived) {
         throw new CategoryValidationError([
-          {
-            field: 'name',
-            message: 'Built-in categories cannot be archived.',
-          },
+          { field: 'name', message: 'Built-in categories cannot be archived.' },
         ]);
       }
 
@@ -200,7 +189,7 @@ export function createCategoryStorage(db: SQLiteDatabaseLike): CategoryStorage {
         id,
         type: existing.type,
         name: existing.name,
-        isBuiltin: false,
+        isBuiltin: existing.is_builtin === 1,
         isArchived,
         updatedAt: now,
       };
@@ -222,9 +211,6 @@ export function createCategoryStorage(db: SQLiteDatabaseLike): CategoryStorage {
       );
       if (!source) {
         throw new Error(`Category to delete (${idToDelete}) not found.`);
-      }
-      if (source.is_builtin === 1) {
-        throw new Error('Built-in categories cannot be deleted.');
       }
 
       const target = await db.getFirstAsync<CategoryRow>(

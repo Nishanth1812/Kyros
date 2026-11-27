@@ -1,4 +1,5 @@
 import type { MonthScope } from '../lib/analytics';
+import type { TransactionType } from '../storage/types';
 
 /** Primary bottom navigation destinations. */
 export type RootTabParamList = {
@@ -20,7 +21,7 @@ export type RootStackParamList = {
   Data: undefined;
   RecurringTransactions: undefined;
   FinancialGoals: undefined;
-  CategoryManagement: undefined;
+  CategoryManagement: { initialType?: TransactionType } | undefined;
 };
 
 /** Single source of truth for the tab bar; mirrored by the tab navigator. */

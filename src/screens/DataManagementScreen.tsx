@@ -154,7 +154,7 @@ export default function DataManagementScreen() {
             onPress: async () => {
               setIsRestoring(true);
               try {
-                const res = await restoreBackup(validated);
+                const res = await restoreBackup(fileContent);
                 setFeedback({
                   message: `Successfully restored ${res.transactionsCount} transactions, ${res.categoriesCount} categories, and ${res.budgetsCount} budgets.`,
                   isError: false,
