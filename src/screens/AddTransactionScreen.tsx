@@ -44,6 +44,7 @@ export default function AddTransactionScreen() {
       <TransactionForm
         categories={activeCategories}
         onCreateCategory={addCategory}
+        onEditCategories={(type) => navigation.navigate('CategoryManagement', { initialType: type })}
         onSubmit={async (input) => {
           await addTransaction(input);
           navigation.navigate('History');

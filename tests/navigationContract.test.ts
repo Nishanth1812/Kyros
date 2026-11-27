@@ -6,13 +6,12 @@ import {
 } from '../src/navigation/types';
 
 describe('Task 4 navigation contract', () => {
-  it('keeps exactly the five primary bottom tab destinations', () => {
+  it('keeps the four primary bottom tab destinations', () => {
     expect([...PRIMARY_TAB_ROUTES]).toEqual([
       'Dashboard',
       'Add',
       'History',
       'Budgets',
-      'Data',
     ]);
   });
 
@@ -21,6 +20,7 @@ describe('Task 4 navigation contract', () => {
       'MainTabs',
       'Analytics',
       'Settings',
+      'Data',
       'RecurringTransactions',
       'FinancialGoals',
       'CategoryManagement',
@@ -30,5 +30,10 @@ describe('Task 4 navigation contract', () => {
   it('keeps Settings off the tab bar and reachable as a stack route', () => {
     expect(PRIMARY_TAB_ROUTES).not.toContain('Settings');
     expect(ROOT_STACK_ROUTES).toContain('Settings');
+  });
+
+  it('keeps Data off the tab bar and reachable as a stack route', () => {
+    expect(PRIMARY_TAB_ROUTES).not.toContain('Data');
+    expect(ROOT_STACK_ROUTES).toContain('Data');
   });
 });

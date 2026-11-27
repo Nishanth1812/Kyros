@@ -14,14 +14,15 @@ stored as integer paise. No account, network, or backend is required.
 - **Historical month navigation:** review past months on the Dashboard with instant
   recalculation of income, expenses, and category breakdown, plus a one-tap current-month return.
 - **CSV spreadsheet export:** export complete transaction history to standard comma-separated
-  (`.csv`) spreadsheet files using Android's native Storage Access Framework in the Data tab.
+  (`.csv`) spreadsheet files using Android's native Storage Access Framework in Settings → Data Safety.
 - **Local backup and restore:** safely export and restore all transactions, categories, and
   budgets as portable, versioned JSON with atomic rollback safety.
 - **Explicit restore confirmation:** view record counts and export dates before
   restoring, with an option to back up existing data before replacing it.
 - **Categories:** built-in income and expense categories plus your own custom
-  categories can be selected when adding or editing a transaction. Rename and
-  archive custom categories; delete them with transaction and schedule reassignment.
+  categories can be selected when adding or editing a transaction. Add, rename,
+  or delete categories from Add → Edit categories. Deletion reassigns
+  transactions and schedules and removes the category's budget.
 - **Edit and delete:** correct an entry in place; deleting asks for confirmation
   and never removes its category or the other transactions.
 - **History filters:** narrow the newest-first list by type, category, and an
@@ -36,12 +37,12 @@ stored as integer paise. No account, network, or backend is required.
 - **Savings goals:** save targets with optional deadlines, track deposits and
   withdrawals, and see progress and the monthly amount needed to reach a target.
 - **Settings and appearance:** choose system, light, or dark appearance in Settings, a
-  secondary screen reachable from every primary tab. Appearance controls are no longer
-  on the Data tab, and Settings shows the app version with no account or sync controls.
+  secondary screen reachable from every primary tab. Settings also provides access to
+  data tools and shows the app version, with no account or sync controls.
 - **History search:** search transaction descriptions, category names, and amounts, or
   filter by `#tags`.
-- **Consistent navigation:** Dashboard, Add, History, Budgets, and Data remain the five
-  bottom tabs. Analytics, recurring transactions, goals, and category management open as
+- **Consistent navigation:** Dashboard, Add, History, and Budgets are the four
+  bottom tabs. Data Safety opens from Settings. Analytics, recurring transactions, goals, and category management open as
   secondary screens and return with the in-app back action or Android system Back.
 - **Readable backups:** new local JSON backups record the app version that created them
   (1.0.0); V1 backups remain restorable.
@@ -101,7 +102,7 @@ src/
   storage/       amounts, validation, schema, categories, budgets, goals, backup and sync storage
   lib/           database setup, INR money, dates, filters, summaries and domain calculations
   state/         shared transaction, budget, goal and recurring state
-  navigation/    bottom tabs (Dashboard, Add, History, Budgets, and Data) and a native stack for Settings, Analytics, Recurring, Goals, and Categories
+  navigation/    bottom tabs (Dashboard, Add, History, and Budgets) and a native stack for Settings, Data, Analytics, Recurring, Goals, and Categories
   components/    transaction and budget forms, category picker, edit modal, filters, row, list, charts, and shared states
   screens/       Dashboard, Add, History, Budgets, Data, Settings, Analytics, Recurring, Goals, and Category management screens
   theme/         system/light/dark palettes, persisted theme mode, spacing and typography
