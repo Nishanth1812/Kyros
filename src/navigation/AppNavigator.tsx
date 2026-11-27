@@ -34,7 +34,6 @@ const tabIcons: Record<(typeof PRIMARY_TAB_ROUTES)[number], string> = {
   Add: '＋',
   History: '◷',
   Budgets: '◈',
-  Data: '⛁',
 };
 
 function MainTabs() {
@@ -82,11 +81,6 @@ function MainTabs() {
         component={BudgetsScreen}
         options={{ tabBarAccessibilityLabel: 'Monthly budgets tab, set and track spending limits' }}
       />
-      <Tab.Screen
-        name="Data"
-        component={DataManagementScreen}
-        options={{ tabBarAccessibilityLabel: 'Data safety tab, backup and restore data' }}
-      />
     </Tab.Navigator>
   );
 }
@@ -123,6 +117,7 @@ export default function AppNavigator() {
         <Stack.Screen name="MainTabs" component={MainTabs} />
         <Stack.Screen name="Analytics" component={AnalyticsScreen} />
         <Stack.Screen name="Settings" component={SettingsScreen} />
+        <Stack.Screen name="Data" component={DataManagementScreen} />
         <Stack.Screen
           name="RecurringTransactions"
           component={RecurringTransactionsScreen}

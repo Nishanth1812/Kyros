@@ -19,6 +19,7 @@ export interface CategoryPickerProps {
   selectedId: number | null;
   onSelect: (id: number) => void;
   onCreateCategory: (input: NewCategoryInput) => Promise<Category>;
+  onEditCategories?: () => void;
   disabled?: boolean;
 }
 
@@ -34,6 +35,7 @@ export default function CategoryPicker({
   selectedId,
   onSelect,
   onCreateCategory,
+  onEditCategories,
   disabled = false,
 }: CategoryPickerProps) {
   const styles = useThemedStyles(createStyles);
@@ -105,11 +107,22 @@ export default function CategoryPicker({
       </View>
       {categories.length === 0 ? (
         <Text style={styles.helperText}>
-          No categories for this type yet. Add one below.
+          No categories for this type yet. {onEditCategories ? 'Edit categories to add one.' : 'Add one below.'}
         </Text>
       ) : null}
 
-      {showCreate ? (
+      {onEditCategories ? (
+        <Pressable
+          onPress={onEditCategories}
+          disabled={disabled}
+          accessibilityRole="button"
+          accessibilityLabel="Edit categories"
+          accessibilityState={{ disabled }}
+          style={({ pressed }) => [styles.newCategoryButton, pressed && !disabled ? styles.newCategoryPressed : null]}
+        >
+          <Text style={styles.newCategoryText}>Edit categories</Text>
+        </Pressable>
+      ) : showCreate ? (
         <View style={styles.createBox}>
           <TextInput
             value={name}

@@ -2,6 +2,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useMemo, useState } from 'react';
 import {
   Alert,
+  Image,
   Modal,
   Pressable,
   ScrollView,
@@ -23,14 +24,14 @@ import { type ThemeColors, elevation, fontSize, radius, spacing } from '../theme
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CategoryManagement'>;
 
-export default function CategoryManagementScreen({ navigation }: Props) {
+export default function CategoryManagementScreen({ navigation, route }: Props) {
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const { categories, transactions, renameCategory, archiveCategory, deleteCategory, addCategory } =
     useTransactions();
 
-  const [selectedType, setSelectedType] = useState<TransactionType>('expense');
+  const [selectedType, setSelectedType] = useState<TransactionType>(route.params?.initialType ?? 'expense');
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [editName, setEditName] = useState('');
   const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
@@ -159,7 +160,7 @@ export default function CategoryManagementScreen({ navigation }: Props) {
 
       <ScreenHeader
         title="Category Management"
-        subtitle="Manage custom categories, rename labels, archive inactive items, or delete with atomic reassignment."
+        subtitle="Add, rename, or delete categories."
       />
 
       {/* Type Selector Chips */}
@@ -216,7 +217,8 @@ export default function CategoryManagementScreen({ navigation }: Props) {
                     <View style={styles.builtinBadge}>
                       <Text style={styles.builtinBadgeText}>Built-in</Text>
                     </View>
-                  ) : cat.isArchived ? (
+                  ) : null}
+                  {cat.isArchived ? (
                     <View style={styles.archivedBadge}>
                       <Text style={styles.archivedBadgeText}>Archived</Text>
                     </View>
@@ -227,36 +229,36 @@ export default function CategoryManagementScreen({ navigation }: Props) {
                 </Text>
               </View>
 
-              {!cat.isBuiltin && (
                 <View style={styles.actionsRow}>
                   <TouchableOpacity
                     style={styles.actionBtn}
                     onPress={() => handleStartRename(cat)}
                     accessibilityRole="button"
-                    accessibilityLabel={`Rename category ${cat.name}`}
+                    accessibilityLabel={`Edit category ${cat.name}`}
                   >
-                    <Text style={styles.actionBtnText}>Rename</Text>
+                    <Image source={require('../../assets/category-icons/edit.png')} style={styles.actionIcon} />
                   </TouchableOpacity>
 
-                  <TouchableOpacity
-                    style={[styles.actionBtn, cat.isArchived ? styles.unarchiveBtn : styles.archiveBtn]}
-                    onPress={() => handleToggleArchive(cat)}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${cat.isArchived ? 'Unarchive' : 'Archive'} category ${cat.name}`}
-                  >
-                    <Text style={styles.actionBtnText}>{cat.isArchived ? 'Unarchive' : 'Archive'}</Text>
-                  </TouchableOpacity>
+                  {cat.isArchived ? (
+                    <TouchableOpacity
+                      style={[styles.actionBtn, styles.unarchiveBtn]}
+                      onPress={() => handleToggleArchive(cat)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Restore category ${cat.name}`}
+                    >
+                      <Text style={styles.actionBtnText}>Restore</Text>
+                    </TouchableOpacity>
+                  ) : null}
 
                   <TouchableOpacity
-                    style={[styles.actionBtn, styles.deleteBtn]}
+                    style={styles.actionBtn}
                     onPress={() => handleStartDelete(cat)}
                     accessibilityRole="button"
                     accessibilityLabel={`Delete category ${cat.name}`}
                   >
-                    <Text style={[styles.actionBtnText, styles.deleteBtnText]}>Delete</Text>
+                    <Image source={require('../../assets/category-icons/delete.png')} style={styles.actionIcon} />
                   </TouchableOpacity>
                 </View>
-              )}
             </View>
           );
         })}
@@ -324,34 +326,26 @@ export default function CategoryManagementScreen({ navigation }: Props) {
           <View style={styles.modalOverlay}>
             <View style={styles.modalCard}>
               <Text style={styles.modalTitle}>Delete Category: {deletingCategory.name}</Text>
-              {transactionsCountForCategory(deletingCategory.id) > 0 ? (
-                <>
-                  <Text style={styles.modalSubtitle}>
-                    This category is used in {transactionsCountForCategory(deletingCategory.id)} transactions. To
-                    prevent orphaned records, choose an active category to reassign them to:
-                  </Text>
-                  <View style={styles.pickerBox}>
-                    {targetCategoryOptions.map((opt) => (
-                      <Pressable
-                        key={opt.id}
-                        style={[styles.pickerItem, targetCategoryId === opt.id && styles.pickerItemActive]}
-                        onPress={() => setTargetCategoryId(opt.id)}
-                        accessibilityRole="radio"
-                        accessibilityLabel={`Reassign to ${opt.name}`}
-                        accessibilityState={{ checked: targetCategoryId === opt.id }}
-                      >
-                        <Text style={[styles.pickerItemText, targetCategoryId === opt.id && styles.pickerItemTextActive]}>
-                          {opt.name}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                </>
-              ) : (
-                <Text style={styles.modalSubtitle}>
-                  This category has no linked transactions. It will be removed immediately.
-                </Text>
-              )}
+              <Text style={styles.modalSubtitle}>
+                Choose an active category for linked transactions and recurring schedules.
+                Any budget for this category will be deleted.
+              </Text>
+              <View style={styles.pickerBox}>
+                {targetCategoryOptions.map((opt) => (
+                  <Pressable
+                    key={opt.id}
+                    style={[styles.pickerItem, targetCategoryId === opt.id && styles.pickerItemActive]}
+                    onPress={() => setTargetCategoryId(opt.id)}
+                    accessibilityRole="radio"
+                    accessibilityLabel={`Reassign to ${opt.name}`}
+                    accessibilityState={{ checked: targetCategoryId === opt.id }}
+                  >
+                    <Text style={[styles.pickerItemText, targetCategoryId === opt.id && styles.pickerItemTextActive]}>
+                      {opt.name}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
 
               {errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
 
@@ -499,19 +493,25 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     ...elevation,
   },
   categoryRow: {
-    paddingVertical: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.xs,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
   categoryInfo: {
-    marginBottom: spacing.xs,
+    flex: 1,
+    minWidth: 0,
   },
   nameBadgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     gap: spacing.sm,
   },
   categoryName: {
+    flexShrink: 1,
     fontSize: fontSize.body,
     fontWeight: '700',
     color: colors.text,
@@ -546,13 +546,14 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   actionsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    justifyContent: 'flex-end',
+    marginLeft: 'auto',
+    maxWidth: '60%',
     gap: spacing.sm,
-    marginTop: spacing.sm,
   },
   actionBtn: {
-    minHeight: 48,
-    minWidth: 48,
-    paddingHorizontal: spacing.md,
+    minHeight: 52,
+    minWidth: 52,
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: radius.md,
@@ -565,20 +566,14 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontWeight: '600',
     color: colors.text,
   },
-  archiveBtn: {
-    backgroundColor: colors.subtleWarning,
-    borderColor: colors.warning,
+  actionIcon: {
+    width: 36,
+    height: 36,
+    tintColor: colors.textSecondary,
   },
   unarchiveBtn: {
     backgroundColor: colors.subtleGreen,
     borderColor: colors.income,
-  },
-  deleteBtn: {
-    backgroundColor: colors.subtleRed,
-    borderColor: colors.expense,
-  },
-  deleteBtnText: {
-    color: colors.expense,
   },
   modalOverlay: {
     flex: 1,

@@ -38,6 +38,7 @@ export interface TransactionFormProps {
   categories: Category[];
   onSubmit: (input: NewTransactionInput) => Promise<void>;
   onCreateCategory: (input: NewCategoryInput) => Promise<Category>;
+  onEditCategories?: (type: TransactionType) => void;
   /** Omit to create; provide a transaction to edit its values in place. */
   initialValues?: TransactionFormValues;
   submitLabel?: string;
@@ -67,6 +68,7 @@ export default function TransactionForm({
   categories,
   onSubmit,
   onCreateCategory,
+  onEditCategories,
   initialValues,
   submitLabel = 'Save transaction',
 }: TransactionFormProps) {
@@ -169,10 +171,11 @@ export default function TransactionForm({
       );
       if (amountIssue) nextErrors.amountMinor = amountIssue.message;
     }
-    if (categoryId === null) nextErrors.categoryId = 'Choose a category.';
+    const categoryIsAvailable = categoriesForType.some((category) => category.id === categoryId);
+    if (!categoryIsAvailable) nextErrors.categoryId = 'Choose a category.';
     setErrors(nextErrors);
 
-    if (!validation.ok || !validation.value || !parsedAmount.ok || categoryId === null) {
+    if (!validation.ok || !validation.value || !parsedAmount.ok || categoryId === null || !categoryIsAvailable) {
       return;
     }
 
@@ -275,6 +278,7 @@ export default function TransactionForm({
           });
         }}
         onCreateCategory={onCreateCategory}
+        onEditCategories={onEditCategories ? () => onEditCategories(type) : undefined}
         disabled={submitting}
       />
       {errors.categoryId ? (
@@ -430,7 +434,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   amountInput: {
     fontSize: fontSize.heading,
     fontWeight: '700',
-    color: colors.primary,
+    color: colors.textPrimary,
   },
   multiline: {
     minHeight: 84,

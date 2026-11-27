@@ -127,7 +127,7 @@ describe('Category Management and Schema v4', () => {
     }
   });
 
-  test('test_rename_category_rejects_built_in_categories_and_blank_names', async () => {
+  test('renames built-in categories and rejects blank names', async () => {
     const { db, close } = createBunSqliteAdapter(':memory:');
     const storage = createCategoryStorage(db);
     try {
@@ -136,7 +136,9 @@ describe('Category Management and Schema v4', () => {
       const food = categories.find((c) => c.name === 'Food' && c.isBuiltin);
       expect(food).toBeDefined();
 
-      await expect(storage.renameCategory(food!.id, 'Groceries')).rejects.toThrow(/built-in/i);
+      const renamed = await storage.renameCategory(food!.id, 'Groceries');
+      expect(renamed.name).toBe('Groceries');
+      expect(renamed.isBuiltin).toBe(true);
       const custom = await storage.createCategory({ type: 'expense', name: 'Gym' });
       await expect(storage.renameCategory(custom.id, '   ')).rejects.toThrow(CategoryValidationError);
     } finally {
@@ -252,10 +254,11 @@ describe('Category Management and Schema v4', () => {
       // Cannot reassign to archived category
       await expect(storage.deleteCategoryWithReassignment(customExpense.id, archivedExpense.id)).rejects.toThrow(/archived/i);
 
-      // Cannot delete built-in category
+      // Built-in categories can be deleted with reassignment.
       const categories = await storage.listCategories('expense');
       const builtIn = categories.find((c) => c.isBuiltin)!;
-      await expect(storage.deleteCategoryWithReassignment(builtIn.id, customExpense.id)).rejects.toThrow(/built-in/i);
+      await storage.deleteCategoryWithReassignment(builtIn.id, customExpense.id);
+      expect((await storage.listCategories('expense')).some((category) => category.id === builtIn.id)).toBe(false);
     } finally {
       close();
     }

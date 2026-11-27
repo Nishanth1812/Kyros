@@ -106,7 +106,6 @@ export default function DashboardScreen() {
     >
       <ScreenHeader
         title="Dashboard"
-        subtitle="Your money at a glance. Values come from entries on this device."
         onSettingsPress={() => navigation.navigate('Settings')}
       />
 
@@ -138,9 +137,6 @@ export default function DashboardScreen() {
                 <Text style={styles.cardLabel}>Lifetime net balance</Text>
                 <Text style={styles.balanceValue}>
                   {formatMinorUnits(summary.balanceMinor)}
-                </Text>
-                <Text style={styles.cardHint}>
-                  Income minus expenses across all entries
                 </Text>
               </View>
 
@@ -310,12 +306,6 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: fontSize.title,
     fontWeight: '700',
     marginTop: spacing.xs,
-  },
-  cardHint: {
-    color: colors.onPrimary,
-    fontSize: fontSize.caption,
-    marginTop: spacing.xs,
-    opacity: 0.8,
   },
   monthNav: {
     flexDirection: 'row',
