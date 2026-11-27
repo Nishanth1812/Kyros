@@ -246,15 +246,6 @@ export default function DataManagementScreen() {
           </View>
         </View>
 
-        <TouchableOpacity
-          style={styles.manageCategoriesButton}
-          onPress={() => navigation.navigate('CategoryManagement')}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel="Manage Categories: rename, archive, or delete with reassignment"
-        >
-          <Text style={styles.manageCategoriesButtonText}>⚙ Manage Categories</Text>
-        </TouchableOpacity>
       </View>
 
       {/* Sync Readiness Card */}
@@ -519,20 +510,5 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     height: 1,
     backgroundColor: colors.border,
     marginVertical: spacing.lg,
-  },
-  manageCategoriesButton: {
-    ...touchTargetStyle,
-    backgroundColor: colors.subtleGreen,
-    borderWidth: 1,
-    borderColor: colors.primary,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: spacing.md,
-  },
-  manageCategoriesButtonText: {
-    color: colors.primary,
-    fontSize: fontSize.body,
-    fontWeight: '700',
   },
 });
