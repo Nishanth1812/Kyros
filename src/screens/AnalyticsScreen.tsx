@@ -125,7 +125,8 @@ export default function AnalyticsScreen({ navigation, route }: Props) {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>6-Month Spending & Income Trend</Text>
           <Text style={styles.cardSubtitle}>
-            Compare your financial trajectory over the last 6 months
+            Income and expenses for the last 6 months. Both bars share the scale
+            shown below the legend; tap a month to see its summary.
           </Text>
           <MonthlyTrendChart
             trends={trends}
@@ -139,14 +140,28 @@ export default function AnalyticsScreen({ navigation, route }: Props) {
         {/* Key Month Metrics Grid */}
         <View style={styles.statsGrid}>
           <View style={styles.statBox}>
-            <Text style={styles.statValue}>
+            <Text
+              style={styles.statValue}
+              accessible
+              accessibilityLabel={`Daily average spend ${formatMinorUnits(
+                analytics.dailyAverageExpenseMinor
+              )}`}
+            >
               {formatMinorUnits(analytics.dailyAverageExpenseMinor)}
             </Text>
             <Text style={styles.statLabel}>Daily Avg Spend</Text>
           </View>
 
           <View style={styles.statBox}>
-            <Text style={styles.statValue}>
+            <Text
+              style={styles.statValue}
+              accessible
+              accessibilityLabel={`Savings rate ${
+                analytics.savingsRate === null
+                  ? 'Not available'
+                  : `${analytics.savingsRate} percent`
+              }`}
+            >
               {analytics.savingsRate === null
                 ? 'Not available'
                 : `${analytics.savingsRate}%`}
@@ -155,7 +170,14 @@ export default function AnalyticsScreen({ navigation, route }: Props) {
           </View>
 
           <View style={styles.statBox}>
-            <Text style={styles.statValue} numberOfLines={1}>
+            <Text
+              style={styles.statValue}
+              numberOfLines={1}
+              accessible
+              accessibilityLabel={`Top expense category ${
+                analytics.topExpenseCategory ? analytics.topExpenseCategory.name : 'none'
+              }`}
+            >
               {analytics.topExpenseCategory ? analytics.topExpenseCategory.name : '—'}
             </Text>
             <Text style={styles.statLabel}>Top Category</Text>
@@ -168,14 +190,26 @@ export default function AnalyticsScreen({ navigation, route }: Props) {
           <View style={styles.summaryRow}>
             <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>Total Income</Text>
-              <Text style={[styles.summaryAmount, styles.incomeColor]}>
+              <Text
+                style={[styles.summaryAmount, styles.incomeColor]}
+                accessible
+                accessibilityLabel={`Total income ${formatMinorUnits(
+                  analytics.totalIncomeMinor
+                )}`}
+              >
                 +{formatMinorUnits(analytics.totalIncomeMinor)}
               </Text>
             </View>
             <View style={styles.summaryDivider} />
             <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>Total Expenses</Text>
-              <Text style={[styles.summaryAmount, styles.expenseColor]}>
+              <Text
+                style={[styles.summaryAmount, styles.expenseColor]}
+                accessible
+                accessibilityLabel={`Total expenses ${formatMinorUnits(
+                  analytics.totalExpenseMinor
+                )}`}
+              >
                 −{formatMinorUnits(analytics.totalExpenseMinor)}
               </Text>
             </View>
@@ -186,7 +220,8 @@ export default function AnalyticsScreen({ navigation, route }: Props) {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Category Spending Distribution</Text>
           <Text style={styles.cardSubtitle}>
-            Percentage and amounts spent by category in {scope.label}
+            Exact amounts and share of total expenses by category in {scope.label}.
+            {' '}Total: {formatMinorUnits(analytics.totalExpenseMinor)}
           </Text>
           <CategoryBreakdownChart
             breakdown={analytics.categoryBreakdown}

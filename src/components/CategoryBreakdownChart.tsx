@@ -21,6 +21,22 @@ export interface CategoryBreakdownChartProps {
   totalExpenseMinor: number;
 }
 
+/** Exact category name, share and amount for TalkBack. */
+export function formatCategoryAccessibilityLabel(
+  item: CategorySpendingBreakdown
+): string {
+  return `${item.name}: ${item.percentage} percent of expenses, ${formatMinorUnits(
+    item.amountMinor
+  )}`;
+}
+
+/** The ranked rows below the segmented bar carry the exact category values. */
+export function formatBreakdownSummaryLabel(
+  breakdown: CategorySpendingBreakdown[]
+): string {
+  return `Spending distribution across ${breakdown.length} categories. Exact amounts are listed below.`;
+}
+
 export default function CategoryBreakdownChart({
   breakdown,
   totalExpenseMinor,
@@ -32,6 +48,7 @@ export default function CategoryBreakdownChart({
       <View
         style={styles.emptyContainer}
         accessible={true}
+        accessibilityRole="text"
         accessibilityLabel="No expenses recorded for this period"
       >
         <Text style={styles.emptyText}>No expenses recorded for this month</Text>
@@ -46,7 +63,7 @@ export default function CategoryBreakdownChart({
         style={styles.segmentedBar}
         accessible={true}
         accessibilityRole="image"
-        accessibilityLabel={`Spending distribution across ${breakdown.length} categories`}
+        accessibilityLabel={formatBreakdownSummaryLabel(breakdown)}
       >
         {breakdown.map((item, index) => {
           const color = PALETTE[index % PALETTE.length];
@@ -65,11 +82,10 @@ export default function CategoryBreakdownChart({
         })}
       </View>
 
-      {/* Ranked Category List */}
+      {/* Ranked Category List: names, percentages and amounts are all text. */}
       <View style={styles.list}>
         {breakdown.map((item, index) => {
           const color = PALETTE[index % PALETTE.length];
-          const accessibilityLabel = `${item.name}: ${item.percentage} percent of expenses, ${formatMinorUnits(item.amountMinor)}`;
 
           return (
             <View
@@ -77,11 +93,11 @@ export default function CategoryBreakdownChart({
               style={styles.categoryRow}
               accessible={true}
               accessibilityRole="summary"
-              accessibilityLabel={accessibilityLabel}
+              accessibilityLabel={formatCategoryAccessibilityLabel(item)}
             >
               <View style={styles.categoryLeft}>
                 <View style={[styles.dot, { backgroundColor: color }]} />
-                <Text style={styles.categoryName} numberOfLines={1}>
+                <Text style={styles.categoryName} numberOfLines={2}>
                   {item.name}
                 </Text>
               </View>

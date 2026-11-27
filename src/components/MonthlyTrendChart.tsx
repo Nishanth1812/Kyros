@@ -13,6 +13,57 @@ export interface MonthlyTrendChartProps {
 
 const BAR_MAX_HEIGHT = 100;
 
+export interface TrendScale {
+  /** Amount represented by a full-height bar; zero when there is no activity. */
+  maxMinor: number;
+  /** Visible axis caption so the bars have a stated reference value. */
+  label: string;
+  /** True when every month has zero income and zero expense. */
+  isEmpty: boolean;
+}
+
+/** Round up to the nearest 1, 2, 5 or 10 times a power of ten. */
+export function getTrendScale(trends: MonthlyTrendDataPoint[]): TrendScale {
+  const peak = trends.reduce(
+    (highest, point) => Math.max(highest, point.incomeMinor, point.expenseMinor),
+    0
+  );
+
+  if (peak <= 0) {
+    return {
+      maxMinor: 0,
+      label: 'No income or expenses in the last 6 months',
+      isEmpty: true,
+    };
+  }
+
+  const magnitude = 10 ** Math.floor(Math.log10(peak));
+  const normalized = peak / magnitude;
+  const step = normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10;
+  const maxMinor = Math.round(step * magnitude);
+
+  return {
+    maxMinor,
+    label: `Scale: ${formatMinorUnits(0)} – ${formatMinorUnits(maxMinor)}`,
+    isEmpty: false,
+  };
+}
+
+/** Height in pixels for one bar, measured against the shared, stated scale. */
+export function getBarHeight(amountMinor: number, scale: TrendScale): number {
+  if (amountMinor <= 0 || scale.maxMinor <= 0) return 0;
+  return Math.min(BAR_MAX_HEIGHT, Math.round((amountMinor / scale.maxMinor) * BAR_MAX_HEIGHT));
+}
+
+/** Exact values for TalkBack; colour never carries the amounts on its own. */
+export function formatTrendAccessibilityLabel(point: MonthlyTrendDataPoint): string {
+  return `${point.label}: Income ${formatMinorUnits(
+    point.incomeMinor
+  )}, Expenses ${formatMinorUnits(point.expenseMinor)}, Net ${formatMinorUnits(
+    point.netMinor
+  )}`;
+}
+
 export default function MonthlyTrendChart({
   trends,
   onSelectMonth,
@@ -20,23 +71,25 @@ export default function MonthlyTrendChart({
 }: MonthlyTrendChartProps) {
   const styles = useThemedStyles(createStyles);
   const { colors } = useTheme();
+
   if (trends.length === 0) {
     return (
-      <View style={styles.emptyContainer}>
+      <View
+        style={styles.emptyContainer}
+        accessible={true}
+        accessibilityRole="text"
+        accessibilityLabel="No monthly history available yet"
+      >
         <Text style={styles.emptyText}>No monthly history available yet</Text>
       </View>
     );
   }
 
-  // Calculate highest single bar amount to scale heights proportionally
-  const maxAmount = Math.max(
-    ...trends.map((t) => Math.max(t.incomeMinor, t.expenseMinor)),
-    1000
-  );
+  const scale = getTrendScale(trends);
 
   return (
     <View style={styles.container}>
-      {/* Legend */}
+      {/* Legend: both series are named in text, not only by colour. */}
       <View style={styles.legend}>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: colors.income }]} />
@@ -48,24 +101,27 @@ export default function MonthlyTrendChart({
         </View>
       </View>
 
+      {scale.isEmpty ? (
+        <View
+          style={styles.emptyBanner}
+          accessible={true}
+          accessibilityRole="text"
+          accessibilityLabel={scale.label}
+        >
+          <Text style={styles.emptyText}>{scale.label}</Text>
+        </View>
+      ) : (
+        <Text style={styles.scaleText} accessibilityRole="text">
+          {scale.label}
+        </Text>
+      )}
+
       {/* Chart Canvas */}
       <View style={styles.chartCanvas}>
         {trends.map((point) => {
           const isSelected = selectedMonth === point.month;
-          const incomeHeight =
-            point.incomeMinor > 0
-              ? Math.max(4, Math.round((point.incomeMinor / maxAmount) * BAR_MAX_HEIGHT))
-              : 0;
-          const expenseHeight =
-            point.expenseMinor > 0
-              ? Math.max(4, Math.round((point.expenseMinor / maxAmount) * BAR_MAX_HEIGHT))
-              : 0;
-
-          const accessibilityLabel = `${point.label}: Income ${formatMinorUnits(
-            point.incomeMinor
-          )}, Expenses ${formatMinorUnits(point.expenseMinor)}, Net ${formatMinorUnits(
-            point.netMinor
-          )}`;
+          const incomeHeight = getBarHeight(point.incomeMinor, scale);
+          const expenseHeight = getBarHeight(point.expenseMinor, scale);
 
           return (
             <Pressable
@@ -74,7 +130,10 @@ export default function MonthlyTrendChart({
               disabled={!onSelectMonth}
               accessible={true}
               accessibilityRole="button"
-              accessibilityLabel={accessibilityLabel}
+              accessibilityLabel={formatTrendAccessibilityLabel(point)}
+              accessibilityHint={
+                onSelectMonth ? 'Shows this month in the summary below' : undefined
+              }
               accessibilityState={{ selected: isSelected }}
               style={({ pressed }) => [
                 styles.monthColumn,
@@ -122,7 +181,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-end',
     gap: spacing.md,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs,
   },
   legendItem: {
     flexDirection: 'row',
@@ -138,6 +197,15 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: fontSize.caption,
     fontWeight: '600',
     color: colors.textMuted,
+  },
+  scaleText: {
+    fontSize: fontSize.caption,
+    color: colors.textMuted,
+    marginBottom: spacing.xs,
+  },
+  emptyBanner: {
+    alignItems: 'center',
+    paddingVertical: spacing.xs,
   },
   chartCanvas: {
     flexDirection: 'row',
