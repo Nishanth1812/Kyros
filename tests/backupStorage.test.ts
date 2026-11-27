@@ -3,6 +3,7 @@ import { createBunSqliteAdapter } from './helpers/bunSqliteAdapter';
 import { initializeSchema } from '../src/storage/schema';
 import { exportBackupData, restoreBackupData } from '../src/storage/backupStorage';
 import { KyrosBackupV1 } from '../src/storage/types';
+import packageJson from '../package.json';
 
 describe('backupStorage', () => {
   it('test_export_backup_captures_all_current_data', async () => {
@@ -46,7 +47,7 @@ describe('backupStorage', () => {
       const backup = await exportBackupData(db);
 
       expect(backup.meta.version).toBe(2);
-      expect(backup.meta.appVersion).toBe('0.6.0');
+      expect(backup.meta.appVersion).toBe(packageJson.version);
       expect(typeof backup.meta.exportedAt).toBe('string');
 
       // Built-in categories (12) + 1 custom category = 13

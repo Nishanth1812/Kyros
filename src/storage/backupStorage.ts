@@ -1,3 +1,4 @@
+import packageJson from '../../package.json';
 import { validateBackupPayload } from './backupValidation';
 import { BUILTIN_CATEGORIES } from './schema';
 import {
@@ -79,7 +80,7 @@ function effectiveTimestamp(updatedAt: number | null, createdAt: number): number
 /** Export every synchronized table as a `KyrosBackupV2` payload. */
 export async function exportBackupData(
   db: SQLiteDatabaseLike,
-  appVersion: string = '0.6.0'
+  appVersion: string = packageJson.version
 ): Promise<KyrosBackupV2> {
   const categoryRows = await db.getAllAsync<CategoryRow>(
     'SELECT id, type, name, is_builtin, is_archived, updated_at FROM categories ORDER BY id ASC;'
