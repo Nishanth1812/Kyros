@@ -1,11 +1,11 @@
 # Kyros
 
-Kyros 0.6.2 is a local-first Android app for recording, organizing, and reviewing
+Kyros 1.0.0 is a local-first Android app for recording, organizing, and reviewing
 income and expenses, with budgets, savings goals, recurring schedules, analytics,
 and versioned local backups. Financial data stays in on-device SQLite and money is
 stored as integer paise. No account, network, or backend is required.
 
-## Features (0.6)
+## Features (1.0)
 
 - **Visual analytics and trends:** explore 6-month income vs. expense trajectories,
   proportional category spending distribution bars, daily average spend, and savings rates.
@@ -80,10 +80,9 @@ upgrades stay signed with the same key. Debug builds use the standard template
 key and need none of this. See
 [ANDROID_RELEASE.md](ANDROID_RELEASE.md) for setup, release steps, and versioning
 rules. Each verified main release gets an annotated `vX.Y.Z` tag; rerunning the
-same commit reuses its version. The first release on a new minor line uses that
-line's exact source version, so advancing from the 0.2.x line (v0.2.0/code 5) to
-source 0.3.0 produces `v0.3.0` with published code 6; later 0.3.x releases
-increment the patch and versionCode.
+same commit reuses its version. The first release on a new version line uses the
+exact source version. Kyros 1.0.0 follows `v0.6.2` (versionCode 12), so CI
+publishes it with versionCode 13.
 
 ## Structure
 
@@ -122,7 +121,7 @@ index.ts           React Native root component registration
   one overall limit and one per expense category, with no rollover.
 - **Android range:** minimum Android 7.0 (API 24), with portrait layout.
   Package `com.kyros.app`, source `versionCode` 9,
-  `versionName` 0.6.0. CI derives published version codes from release tags.
+  `versionName` 1.0.0. CI derives published version codes from release tags.
 - **Ordering:** the storage layer sorts by date, then creation time, then id,
   all descending, so the newest entry is always first.
 - **Migration:** the app migrates supported SQLite databases through schema v4

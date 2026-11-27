@@ -1,6 +1,6 @@
-# Android Release Guidance — Kyros 0.6.0
+# Android Release Guidance — Kyros 1.0.0
 
-This document describes how to produce a **signed** release build of Kyros 0.6.0 and
+This document describes how to produce a **signed** release build of Kyros 1.0.0 and
 how to install and upgrade it. Kyros uses React Native and the Android Gradle
 wrapper in `android/`. GitHub Actions builds and verifies signed APKs on pushes
 to `main` (§9).
@@ -100,9 +100,10 @@ Test-Path $env:KYROS_RELEASE_STORE_FILE   # must be True
 CI computes the release version and `versionCode` for each new release from
 `main` (§9). To change the source version, update `package.json` and
 `android/app/build.gradle` together. Keep Android API 24 as the minimum. The
-current source base is version `0.6.0` with `versionCode` 9. CI derives the
-published version from the release tags; the source values identify the release
-line and are not changed by the workflow.
+1.0.0 source base uses `versionCode` 9. The latest published release,
+`v0.6.2`, used versionCode 12; CI will publish 1.0.0 with versionCode 13. CI
+derives published version codes from annotated release tags and does not change
+the source values.
 
 ## 4. Build the release APK
 
@@ -171,11 +172,12 @@ Get-ChildItem Env:KYROS_RELEASE_* | Remove-Item
 - **Same key is mandatory.** PackageManager only applies an update when the new
   APK is signed with the same key as the installed one. Reuse the §1 keystore
   for every release.
-- **Upgrade test (0.5 → 0.6):** install the previous release with transactions,
-  categories, and budgets, then install 0.6.0 signed with the same key. Confirm
-  the v3-to-v4 migration preserves existing data. Check category reassignment,
-  recurring schedules, goals, theme persistence, History search, and budget
-  thresholds against saved data.
+- **Upgrade test (0.6.2 → 1.0.0):** install the previous signed release with
+  representative transactions, categories, budgets, recurring schedules, goals,
+  and a V2 backup. Install 1.0.0 with the same key. Confirm the database remains
+  at schema v4 and all saved data and settings remain available. Check the main
+  transaction, dashboard, history, budget, goal, recurring, backup, and export
+  flows.
 - **Backup compatibility:** restore a V1 backup from an earlier release and a
   V2 backup containing goals, schedules, and tombstones. Confirm restore replaces
   all synchronized tables atomically and leaves valid category references.

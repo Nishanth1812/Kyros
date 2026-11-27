@@ -129,7 +129,7 @@ while preserving the local-first SQLite foundation.
   and category analysis.
 - RFC 4180 CSV transaction export via Storage Access Framework.
 
-### 0.6 — Feature expansion and sync readiness (implemented; release pending)
+### 0.6 — Feature expansion and sync readiness (released through 0.6.2)
 
 **Goal:** Expand local financial power with safe category management, recurring
 transaction schedules, savings goals with progress tracking, dynamic theme
@@ -160,10 +160,40 @@ contributions and concurrent updates; test system/light/dark themes across scree
 restore V1 and V2 backups; and confirm local deltas preserve newer edits and apply
 tombstones without data loss.
 
-### 0.7 and later — Connected cloud services and multi-device sync
+### 1.0 — Stable local-first launch
 
-**Goal:** Enable secure multi-device synchronization over cloud backends built on
-top of 0.6's delta engine, while retaining 100% offline-first local capability.
+**Goal:** Launch the existing Kyros experience as its first stable major release
+without changing local-first behavior or adding launch-blocking feature work.
+
+**Scope:**
+
+- Ship the existing 0.6.2 feature set as Kyros 1.0.0.
+- Keep Android as the supported platform and publish a signed APK through the
+  existing GitHub Releases workflow.
+- Preserve the v4 SQLite database, local backups, integer-paise calculations,
+  offline operation, and the existing signing key.
+- Keep accounts, network services, multi-device sync, and the proposed UI,
+  analytics, settings, and performance improvements out of 1.0; evaluate them
+  for later releases.
+
+**Release checks:** Run the automated tests and TypeScript check; install the
+1.0.0 APK over 0.6.2 data signed with the existing key; verify all existing data
+and settings survive; verify the APK signature and versionCode 13; and review
+and update the published GitHub wiki after release.
+
+### 1.1 and later — Future product improvements
+
+**Candidate work:** Improve analytics visuals, refine the overall interface,
+provide dedicated settings, and measure and address performance bottlenecks.
+Reconsider multi-device synchronization only when a concrete user need and its
+privacy and account requirements are known. These are future candidates, not
+commitments for the 1.0 release.
+
+#### Connected services and multi-device sync (unscheduled)
+
+**Goal:** Enable secure multi-device synchronization over cloud backends built
+on top of 0.6's delta engine, while retaining 100% offline-first local
+capability.
 
 **API compatibility:** Do not add version prefixes to API routes. Evolve the
 API compatibly and plan migrations for changes that cannot be made additively.
