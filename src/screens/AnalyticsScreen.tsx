@@ -1,6 +1,6 @@
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
 import {
-  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -19,28 +19,23 @@ import {
   type MonthScope,
 } from '../lib/analytics';
 import { formatMinorUnits } from '../lib/money';
+import type { RootStackParamList } from '../navigation/types';
 import { useTransactions } from '../state/TransactionsContext';
 import { responsivePageContentStyle, responsivePageWidthStyle } from '../theme/layout';
 import { useTheme, useThemedStyles } from '../theme/ThemeContext';
 import { type ThemeColors, elevation, fontSize, radius, spacing } from '../theme/theme';
 
-export interface AnalyticsScreenProps {
-  visible?: boolean;
-  onClose?: () => void;
-  initialScope?: MonthScope;
-}
+type Props = NativeStackScreenProps<RootStackParamList, 'Analytics'>;
 
-export default function AnalyticsScreen({
-  visible = true,
-  onClose,
-  initialScope,
-}: AnalyticsScreenProps) {
+export default function AnalyticsScreen({ navigation, route }: Props) {
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const { transactions, categories } = useTransactions();
   const currentScope = getMonthScope(new Date());
-  const [scope, setScope] = useState<MonthScope>(() => initialScope ?? currentScope);
+  const [scope, setScope] = useState<MonthScope>(
+    () => route.params?.initialScope ?? currentScope
+  );
 
   const analytics = calculateMonthAnalytics(transactions, categories, scope);
   const trends = calculateMultiMonthTrends(transactions, 6, new Date(scope.year, scope.month - 1, 1));
@@ -57,20 +52,18 @@ export default function AnalyticsScreen({
           </Text>
           <Text style={styles.subtitle}>Historical trends and spending insights</Text>
         </View>
-        {onClose && (
-          <Pressable
-            onPress={onClose}
-            accessible={true}
-            accessibilityRole="button"
-            accessibilityLabel="Close analytics"
-            style={({ pressed }) => [
-              styles.closeButton,
-              pressed ? styles.closeButtonPressed : null,
-            ]}
-          >
-            <Text style={styles.closeText}>Close</Text>
-          </Pressable>
-        )}
+        <Pressable
+          onPress={() => navigation.goBack()}
+          accessible
+          accessibilityRole="button"
+          accessibilityLabel="Back to previous screen"
+          style={({ pressed }) => [
+            styles.closeButton,
+            pressed ? styles.closeButtonPressed : null,
+          ]}
+        >
+          <Text style={styles.closeText}>← Back</Text>
+        </Pressable>
       </View>
 
       <ScrollView
@@ -132,7 +125,8 @@ export default function AnalyticsScreen({
         <View style={styles.card}>
           <Text style={styles.cardTitle}>6-Month Spending & Income Trend</Text>
           <Text style={styles.cardSubtitle}>
-            Compare your financial trajectory over the last 6 months
+            Income and expenses for the last 6 months. Both bars share the scale
+            shown below the legend; tap a month to see its summary.
           </Text>
           <MonthlyTrendChart
             trends={trends}
@@ -146,19 +140,44 @@ export default function AnalyticsScreen({
         {/* Key Month Metrics Grid */}
         <View style={styles.statsGrid}>
           <View style={styles.statBox}>
-            <Text style={styles.statValue}>
+            <Text
+              style={styles.statValue}
+              accessible
+              accessibilityLabel={`Daily average spend ${formatMinorUnits(
+                analytics.dailyAverageExpenseMinor
+              )}`}
+            >
               {formatMinorUnits(analytics.dailyAverageExpenseMinor)}
             </Text>
             <Text style={styles.statLabel}>Daily Avg Spend</Text>
           </View>
 
           <View style={styles.statBox}>
-            <Text style={styles.statValue}>{analytics.savingsRate}%</Text>
+            <Text
+              style={styles.statValue}
+              accessible
+              accessibilityLabel={`Savings rate ${
+                analytics.savingsRate === null
+                  ? 'Not available'
+                  : `${analytics.savingsRate} percent`
+              }`}
+            >
+              {analytics.savingsRate === null
+                ? 'Not available'
+                : `${analytics.savingsRate}%`}
+            </Text>
             <Text style={styles.statLabel}>Savings Rate</Text>
           </View>
 
           <View style={styles.statBox}>
-            <Text style={styles.statValue} numberOfLines={1}>
+            <Text
+              style={styles.statValue}
+              numberOfLines={1}
+              accessible
+              accessibilityLabel={`Top expense category ${
+                analytics.topExpenseCategory ? analytics.topExpenseCategory.name : 'none'
+              }`}
+            >
               {analytics.topExpenseCategory ? analytics.topExpenseCategory.name : '—'}
             </Text>
             <Text style={styles.statLabel}>Top Category</Text>
@@ -171,14 +190,26 @@ export default function AnalyticsScreen({
           <View style={styles.summaryRow}>
             <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>Total Income</Text>
-              <Text style={[styles.summaryAmount, styles.incomeColor]}>
+              <Text
+                style={[styles.summaryAmount, styles.incomeColor]}
+                accessible
+                accessibilityLabel={`Total income ${formatMinorUnits(
+                  analytics.totalIncomeMinor
+                )}`}
+              >
                 +{formatMinorUnits(analytics.totalIncomeMinor)}
               </Text>
             </View>
             <View style={styles.summaryDivider} />
             <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>Total Expenses</Text>
-              <Text style={[styles.summaryAmount, styles.expenseColor]}>
+              <Text
+                style={[styles.summaryAmount, styles.expenseColor]}
+                accessible
+                accessibilityLabel={`Total expenses ${formatMinorUnits(
+                  analytics.totalExpenseMinor
+                )}`}
+              >
                 −{formatMinorUnits(analytics.totalExpenseMinor)}
               </Text>
             </View>
@@ -189,7 +220,8 @@ export default function AnalyticsScreen({
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Category Spending Distribution</Text>
           <Text style={styles.cardSubtitle}>
-            Percentage and amounts spent by category in {scope.label}
+            Exact amounts and share of total expenses by category in {scope.label}.
+            {' '}Total: {formatMinorUnits(analytics.totalExpenseMinor)}
           </Text>
           <CategoryBreakdownChart
             breakdown={analytics.categoryBreakdown}
@@ -199,14 +231,6 @@ export default function AnalyticsScreen({
       </ScrollView>
     </View>
   );
-
-  if (onClose) {
-    return (
-      <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-        {content}
-      </Modal>
-    );
-  }
 
   return content;
 }

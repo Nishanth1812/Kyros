@@ -1,8 +1,13 @@
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import {
+  type CompositeNavigationProp,
+  useNavigation,
+} from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,13 +20,18 @@ import ScreenHeader from '../components/ScreenHeader';
 import { formatTransactionsToCsv } from '../lib/csvExport';
 import { getSyncStorage } from '../lib/database';
 import { defaultFileBridge } from '../lib/fileBridge';
+import type { RootStackParamList, RootTabParamList } from '../navigation/types';
 import { useTransactions } from '../state/TransactionsContext';
 import { validateBackupPayload } from '../storage/backupValidation';
 import type { SyncStorageInfo } from '../storage/types';
-import { responsivePageContentStyle } from '../theme/layout';
+import { responsivePageContentStyle, touchTargetStyle } from '../theme/layout';
 import { useTheme, useThemedStyles } from '../theme/ThemeContext';
 import { type ThemeColors, elevation, fontSize, radius, spacing } from '../theme/theme';
-import CategoryManagementScreen from './CategoryManagementScreen';
+
+type Navigation = CompositeNavigationProp<
+  BottomTabNavigationProp<RootTabParamList, 'Data'>,
+  NativeStackNavigationProp<RootStackParamList>
+>;
 
 function formatSyncTimestamp(timestamp: number): string {
   if (!timestamp || timestamp <= 0) return 'No changes recorded yet';
@@ -31,9 +41,9 @@ function formatSyncTimestamp(timestamp: number): string {
 export default function DataManagementScreen() {
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
-  const { colors, mode, setMode } = useTheme();
+  const { colors } = useTheme();
+  const navigation = useNavigation<Navigation>();
   const { transactions, categories, budgets, exportBackup, restoreBackup } = useTransactions();
-  const [showCategoryManagement, setShowCategoryManagement] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isExportingCsv, setIsExportingCsv] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
@@ -172,10 +182,6 @@ export default function DataManagementScreen() {
     }
   };
 
-  if (showCategoryManagement) {
-    return <CategoryManagementScreen onBack={() => setShowCategoryManagement(false)} />;
-  }
-
   return (
     <ScrollView
       style={styles.screen}
@@ -185,6 +191,7 @@ export default function DataManagementScreen() {
       <ScreenHeader
         title="Data Safety"
         subtitle="Manage local backups, exports, and data recovery"
+        onSettingsPress={() => navigation.navigate('Settings')}
       />
 
       {feedback && (
@@ -208,47 +215,11 @@ export default function DataManagementScreen() {
         </View>
       )}
 
-      {/* Theme Appearance Card */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Appearance</Text>
-        <Text style={styles.cardSubtitle}>
-          Choose how Kyros looks. System follows your device setting.
-        </Text>
-        <View style={styles.themeRow}>
-          {(['system', 'light', 'dark'] as const).map((option) => {
-            const selected = mode === option;
-            const label =
-              option === 'system' ? 'System' : option === 'light' ? 'Light' : 'Dark';
-            return (
-              <Pressable
-                key={option}
-                onPress={() => setMode(option)}
-                accessible
-                accessibilityRole="radio"
-                accessibilityLabel={`${label} theme`}
-                accessibilityState={{ selected }}
-                style={[
-                  styles.themeOption,
-                  selected ? styles.themeOptionSelected : null,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.themeOptionText,
-                    selected ? styles.themeOptionTextSelected : null,
-                  ]}
-                >
-                  {label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      </View>
-
       {/* Database Overview Card */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Stored Records Overview</Text>
+        <Text style={styles.cardTitle} accessibilityRole="header">
+          Stored Records Overview
+        </Text>
         <Text style={styles.cardSubtitle}>
           All data is stored purely locally on your device in offline SQLite storage.
         </Text>
@@ -277,7 +248,7 @@ export default function DataManagementScreen() {
 
         <TouchableOpacity
           style={styles.manageCategoriesButton}
-          onPress={() => setShowCategoryManagement(true)}
+          onPress={() => navigation.navigate('CategoryManagement')}
           accessible={true}
           accessibilityRole="button"
           accessibilityLabel="Manage Categories: rename, archive, or delete with reassignment"
@@ -288,7 +259,9 @@ export default function DataManagementScreen() {
 
       {/* Sync Readiness Card */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Sync Readiness (Local Only)</Text>
+        <Text style={styles.cardTitle} accessibilityRole="header">
+          Sync Readiness (Local Only)
+        </Text>
         <Text style={styles.cardSubtitle}>
           Offline-first delta engine status. No network transport is configured; local
           SQLite remains the source of truth.
@@ -308,9 +281,19 @@ export default function DataManagementScreen() {
         )}
       </View>
 
-      {/* CSV Spreadsheet Export Card */}
+      {/* Grouped export, backup and restore actions */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Spreadsheet Report (CSV)</Text>
+        <Text style={styles.cardTitle} accessibilityRole="header">
+          Backup, export & restore
+        </Text>
+        <Text style={styles.cardSubtitle}>
+          Your records stay on this device. Export a copy before restoring or
+          replacing any data.
+        </Text>
+
+        <Text style={styles.actionTitle} accessibilityRole="header">
+          Spreadsheet report (CSV)
+        </Text>
         <Text style={styles.cardDescription}>
           Export all transactions into a standard comma-separated (.csv) spreadsheet file readable by Google Sheets, Microsoft Excel, or personal accounting software.
         </Text>
@@ -330,11 +313,12 @@ export default function DataManagementScreen() {
             <Text style={styles.outlineButtonText}>Export Transactions (CSV)</Text>
           )}
         </TouchableOpacity>
-      </View>
 
-      {/* JSON Backup & Restore Card */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Backup & Recovery (JSON)</Text>
+        <View style={styles.divider} />
+
+        <Text style={styles.actionTitle} accessibilityRole="header">
+          JSON backup
+        </Text>
         <Text style={styles.cardDescription}>
           Export a complete, portable JSON backup of your transactions, categories, and budgets using Android's file manager. You can safely store it anywhere or use it to restore your data.
         </Text>
@@ -357,6 +341,9 @@ export default function DataManagementScreen() {
 
         <View style={styles.divider} />
 
+        <Text style={styles.actionTitle} accessibilityRole="header">
+          Restore from backup
+        </Text>
         <Text style={styles.cardDescription}>
           Restore your data from a previous Kyros backup file. Restoring will validate the file format and completely replace the data currently on this device.
         </Text>
@@ -402,8 +389,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderWidth: 1,
   },
   bannerText: {
-    fontSize: fontSize.caption,
-    fontWeight: '500',
+    fontSize: fontSize.body,
+    fontWeight: '600',
   },
   bannerTextSuccess: {
     color: colors.income,
@@ -428,6 +415,12 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: fontSize.caption,
     color: colors.textMuted,
     marginBottom: spacing.md,
+  },
+  actionTitle: {
+    fontSize: fontSize.heading,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: spacing.xs,
   },
   cardDescription: {
     fontSize: fontSize.body,
@@ -459,16 +452,16 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginTop: spacing.xs,
   },
   statDetail: {
-    fontSize: 10,
+    fontSize: fontSize.caption,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   outlineButton: {
+    ...touchTargetStyle,
     backgroundColor: colors.subtleGreen,
     borderColor: colors.primary,
     borderWidth: 1.5,
     borderRadius: radius.md,
-    minHeight: 48,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.md,
@@ -479,9 +472,9 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontWeight: '700',
   },
   primaryButton: {
+    ...touchTargetStyle,
     backgroundColor: colors.primary,
     borderRadius: radius.md,
-    minHeight: 48,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.md,
@@ -493,11 +486,11 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontWeight: '700',
   },
   secondaryButton: {
+    ...touchTargetStyle,
     backgroundColor: 'transparent',
     borderColor: colors.primary,
     borderWidth: 1.5,
     borderRadius: radius.md,
-    minHeight: 48,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.md,
@@ -515,35 +508,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.border,
     marginVertical: spacing.lg,
   },
-  themeRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.sm,
-  },
-  themeOption: {
-    flex: 1,
-    minHeight: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
-  },
-  themeOptionSelected: {
-    borderColor: colors.primary,
-    backgroundColor: colors.subtleGreen,
-  },
-  themeOptionText: {
-    fontSize: fontSize.body,
-    fontWeight: '600',
-    color: colors.textMuted,
-  },
-  themeOptionTextSelected: {
-    color: colors.primary,
-  },
   manageCategoriesButton: {
-    minHeight: 48,
+    ...touchTargetStyle,
     backgroundColor: colors.subtleGreen,
     borderWidth: 1,
     borderColor: colors.primary,

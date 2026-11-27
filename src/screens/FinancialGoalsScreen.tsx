@@ -1,3 +1,4 @@
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMemo, useState } from 'react';
 import {
   Alert,
@@ -17,11 +18,14 @@ import ScreenHeader from '../components/ScreenHeader';
 import { ErrorBanner, ErrorView, LoadingView } from '../components/StateViews';
 import { calculateGoalProgress } from '../lib/goalCalculations';
 import { formatMinorUnits, parseAmountToMinorUnits } from '../lib/money';
+import type { RootStackParamList } from '../navigation/types';
 import type { FinancialGoal } from '../storage/types';
 import { useTransactions } from '../state/TransactionsContext';
 import { responsivePageContentStyle } from '../theme/layout';
 import { useTheme, useThemedStyles } from '../theme/ThemeContext';
 import { type ThemeColors, elevation, fontSize, radius, spacing } from '../theme/theme';
+
+type Props = NativeStackScreenProps<RootStackParamList, 'FinancialGoals'>;
 
 interface ContributionTarget {
   goal: FinancialGoal;
@@ -34,7 +38,7 @@ function toMessage(error: unknown): string {
     : 'Something went wrong. Please try again.';
 }
 
-export default function FinancialGoalsScreen({ onBack }: { onBack: () => void }) {
+export default function FinancialGoalsScreen({ navigation }: Props) {
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
@@ -201,9 +205,9 @@ export default function FinancialGoalsScreen({ onBack }: { onBack: () => void })
       }
     >
       <Pressable
-        onPress={onBack}
+        onPress={() => navigation.goBack()}
         accessibilityRole="button"
-        accessibilityLabel="Back to Budgets"
+        accessibilityLabel="Back to previous screen"
         style={({ pressed }) => [
           styles.backButton,
           pressed ? styles.pressed : null,

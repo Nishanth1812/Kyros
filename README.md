@@ -1,14 +1,16 @@
 # Kyros
 
-Kyros 0.6.2 is a local-first Android app for recording, organizing, and reviewing
+Kyros 1.0.0 is a local-first Android app for recording, organizing, and reviewing
 income and expenses, with budgets, savings goals, recurring schedules, analytics,
 and versioned local backups. Financial data stays in on-device SQLite and money is
 stored as integer paise. No account, network, or backend is required.
 
-## Features (0.6)
+## Features (1.0)
 
-- **Visual analytics and trends:** explore 6-month income vs. expense trajectories,
-  proportional category spending distribution bars, daily average spend, and savings rates.
+- **Visual analytics and trends:** explore 6-month income vs. expense trajectories with
+  a stated scale and exact values, proportional category spending distribution, daily
+  average spend, and savings rates. A deficit shows a negative rate; a month with no
+  income shows "Not available".
 - **Historical month navigation:** review past months on the Dashboard with instant
   recalculation of income, expenses, and category breakdown, plus a one-tap current-month return.
 - **CSV spreadsheet export:** export complete transaction history to standard comma-separated
@@ -33,13 +35,21 @@ stored as integer paise. No account, network, or backend is required.
   review due items on the Dashboard, and apply selected entries to history.
 - **Savings goals:** save targets with optional deadlines, track deposits and
   withdrawals, and see progress and the monthly amount needed to reach a target.
-- **Appearance and History search:** choose system, light, or dark appearance;
-  search transaction descriptions, category names, and amounts, or filter by `#tags`.
+- **Settings and appearance:** choose system, light, or dark appearance in Settings, a
+  secondary screen reachable from every primary tab. Appearance controls are no longer
+  on the Data tab, and Settings shows the app version with no account or sync controls.
+- **History search:** search transaction descriptions, category names, and amounts, or
+  filter by `#tags`.
+- **Consistent navigation:** Dashboard, Add, History, Budgets, and Data remain the five
+  bottom tabs. Analytics, recurring transactions, goals, and category management open as
+  secondary screens and return with the in-app back action or Android system Back.
+- **Readable backups:** new local JSON backups record the app version that created them
+  (1.0.0); V1 backups remain restorable.
 - **Responsive screens:** all tabs and nested screens respect safe areas, stay
   centered on wider displays, and keep actions usable on narrow phones in both
   light and dark themes.
-- **Accessibility & Quality:** minimum 48×48 dp touch targets across buttons, chips,
-  and pickers; descriptive accessibility labels and roles; and layout scaling.
+- **Accessibility & Quality:** interactive controls use a shared 48×48 dp minimum
+  target, with descriptive accessibility labels and roles and responsive layout scaling.
 - **Sync readiness:** export and apply timestamped local deltas with conflict
   handling and deletion markers. There is no cloud transport; SQLite stays on-device.
 - **Backup V2:** backups include goals, recurring schedules, category state,
@@ -80,10 +90,9 @@ upgrades stay signed with the same key. Debug builds use the standard template
 key and need none of this. See
 [ANDROID_RELEASE.md](ANDROID_RELEASE.md) for setup, release steps, and versioning
 rules. Each verified main release gets an annotated `vX.Y.Z` tag; rerunning the
-same commit reuses its version. The first release on a new minor line uses that
-line's exact source version, so advancing from the 0.2.x line (v0.2.0/code 5) to
-source 0.3.0 produces `v0.3.0` with published code 6; later 0.3.x releases
-increment the patch and versionCode.
+same commit reuses its version. The first release on a new version line uses the
+exact source version. Kyros 1.0.0 follows `v0.6.2` (versionCode 12), so CI
+publishes it with versionCode 13.
 
 ## Structure
 
@@ -92,9 +101,9 @@ src/
   storage/       amounts, validation, schema, categories, budgets, goals, backup and sync storage
   lib/           database setup, INR money, dates, filters, summaries and domain calculations
   state/         shared transaction, budget, goal and recurring state
-  navigation/    bottom tabs (Dashboard, Add, History, Budgets, and Data)
-  components/    transaction and budget forms, category picker, edit modal, filters, row, list, and states
-  screens/       AddTransactionScreen, HistoryScreen, DashboardScreen, BudgetsScreen, and DataManagementScreen
+  navigation/    bottom tabs (Dashboard, Add, History, Budgets, and Data) and a native stack for Settings, Analytics, Recurring, Goals, and Categories
+  components/    transaction and budget forms, category picker, edit modal, filters, row, list, charts, and shared states
+  screens/       Dashboard, Add, History, Budgets, Data, Settings, Analytics, Recurring, Goals, and Category management screens
   theme/         system/light/dark palettes, persisted theme mode, spacing and typography
 App.tsx            providers and root navigator
 index.ts           React Native root component registration
@@ -114,6 +123,13 @@ index.ts           React Native root component registration
 - **Dashboard periods:** the dashboard shows lifetime net balance (all income
   minus all expenses), current-calendar-month income and expense totals, and
   current-month expenses by category. The month follows the device's local date.
+- **Savings rate:** derived from the selected month's income and expenses in
+  integer paise as `(income - expenses) / income * 100`. A deficit produces a
+  negative percentage and a month with no income shows "Not available" instead
+  of 0%; both are shown on Dashboard and Analytics.
+- **Backups:** new local JSON exports record the running app version from the
+  package manifest (1.0.0) in metadata. The backup format and restore rules are
+  unchanged, and older backups remain restorable.
 - **Budgets:** limits recur each local calendar month and are saved as positive
   integer paise. Progress is derived only from expense transactions in the
   current local month (first through last day, inclusive), so income is excluded
@@ -122,7 +138,7 @@ index.ts           React Native root component registration
   one overall limit and one per expense category, with no rollover.
 - **Android range:** minimum Android 7.0 (API 24), with portrait layout.
   Package `com.kyros.app`, source `versionCode` 9,
-  `versionName` 0.6.0. CI derives published version codes from release tags.
+  `versionName` 1.0.0. CI derives published version codes from release tags.
 - **Ordering:** the storage layer sorts by date, then creation time, then id,
   all descending, so the newest entry is always first.
 - **Migration:** the app migrates supported SQLite databases through schema v4

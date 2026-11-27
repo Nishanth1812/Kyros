@@ -1,3 +1,9 @@
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import {
+  type CompositeNavigationProp,
+  useNavigation,
+} from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useMemo, useState } from 'react';
 import {
   Pressable,
@@ -21,13 +27,17 @@ import {
 } from '../lib/analytics';
 import { formatMinorUnits } from '../lib/money';
 import { summarizeTransactions, type DashboardSummary } from '../lib/summaries';
+import type { RootStackParamList, RootTabParamList } from '../navigation/types';
 import { useTransactions } from '../state/TransactionsContext';
-import { responsivePageContentStyle } from '../theme/layout';
+import { responsivePageContentStyle, touchTargetStyle } from '../theme/layout';
 import { useTheme, useThemedStyles } from '../theme/ThemeContext';
 import { type ThemeColors, elevation, fontSize, radius, spacing } from '../theme/theme';
-import AnalyticsScreen from './AnalyticsScreen';
-import RecurringTransactionsScreen from './RecurringTransactionsScreen';
 import RecurringReviewBanner from '../components/RecurringReviewBanner';
+
+type Navigation = CompositeNavigationProp<
+  BottomTabNavigationProp<RootTabParamList, 'Dashboard'>,
+  NativeStackNavigationProp<RootStackParamList>
+>;
 
 function toMessage(error: unknown): string {
   return error instanceof Error && error.message
@@ -39,10 +49,9 @@ export default function DashboardScreen() {
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const navigation = useNavigation<Navigation>();
   const { transactions, categories, status, error, refresh } = useTransactions();
   const [refreshing, setRefreshing] = useState(false);
-  const [showAnalytics, setShowAnalytics] = useState(false);
-  const [showRecurring, setShowRecurring] = useState(false);
 
   const currentScope = getMonthScope(new Date());
   const [selectedScope, setSelectedScope] = useState<MonthScope>(currentScope);
@@ -82,10 +91,6 @@ export default function DashboardScreen() {
     return calculateMonthAnalytics(transactions, categories, selectedScope);
   }, [transactions, categories, selectedScope]);
 
-  if (showRecurring) {
-    return <RecurringTransactionsScreen onBack={() => setShowRecurring(false)} />;
-  }
-
   return (
     <ScrollView
       style={styles.screen}
@@ -102,6 +107,7 @@ export default function DashboardScreen() {
       <ScreenHeader
         title="Dashboard"
         subtitle="Your money at a glance. Values come from entries on this device."
+        onSettingsPress={() => navigation.navigate('Settings')}
       />
 
       {status === 'loading' ? <LoadingView /> : null}
@@ -117,7 +123,9 @@ export default function DashboardScreen() {
           {summaryError ? <ErrorBanner message={summaryError} /> : null}
           {summary ? (
             <>
-              <RecurringReviewBanner onReview={() => setShowRecurring(true)} />
+              <RecurringReviewBanner
+                onReview={() => navigation.navigate('RecurringTransactions')}
+              />
 
               {/* Lifetime Net Balance Card */}
               <View
@@ -153,7 +161,9 @@ export default function DashboardScreen() {
                 </Pressable>
 
                 <View style={styles.monthCenter}>
-                  <Text style={styles.monthTitle}>{selectedScope.label}</Text>
+                  <Text style={styles.monthTitle} accessibilityRole="header">
+                    {selectedScope.label}
+                  </Text>
                   {!isCurrentMonth && (
                     <Pressable
                       onPress={() => setSelectedScope(currentScope)}
@@ -213,12 +223,31 @@ export default function DashboardScreen() {
                     {formatMinorUnits(summary.periodExpenseMinor)}
                   </Text>
                 </View>
+                <View style={styles.divider} />
+                <View
+                  style={styles.metricRow}
+                  accessible
+                  accessibilityLabel={`Savings rate for ${selectedScope.label} ${
+                    analytics.savingsRate === null
+                      ? 'Not available'
+                      : `${analytics.savingsRate} percent`
+                  }`}
+                >
+                  <Text style={styles.metricLabel}>Savings Rate</Text>
+                  <Text style={[styles.metricValue, styles.savingsText]}>
+                    {analytics.savingsRate === null
+                      ? 'Not available'
+                      : `${analytics.savingsRate}%`}
+                  </Text>
+                </View>
               </View>
 
               {/* Insights and Analytics Entry Point */}
               <TouchableOpacity
                 style={styles.analyticsEntryCard}
-                onPress={() => setShowAnalytics(true)}
+                onPress={() =>
+                  navigation.navigate('Analytics', { initialScope: selectedScope })
+                }
                 accessible={true}
                 accessibilityRole="button"
                 accessibilityLabel="Open financial analytics and spending trends"
@@ -253,15 +282,6 @@ export default function DashboardScreen() {
           ) : null}
         </>
       ) : null}
-
-      {/* Analytics Modal */}
-      {showAnalytics && (
-        <AnalyticsScreen
-          visible={showAnalytics}
-          onClose={() => setShowAnalytics(false)}
-          initialScope={selectedScope}
-        />
-      )}
     </ScrollView>
   );
 }
@@ -308,8 +328,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     ...elevation,
   },
   navBtn: {
-    minHeight: 48,
-    minWidth: 48,
+    ...touchTargetStyle,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.sm,
@@ -332,19 +351,21 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
   },
   monthTitle: {
-    fontSize: fontSize.body,
+    fontSize: fontSize.heading,
     fontWeight: '700',
     color: colors.text,
   },
   currentMonthBadge: {
-    marginTop: 2,
+    ...touchTargetStyle,
+    marginTop: spacing.xs,
     backgroundColor: colors.subtleGreen,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: radius.pill,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   currentMonthBadgeText: {
-    fontSize: 10,
+    fontSize: fontSize.caption,
     fontWeight: '700',
     color: colors.primary,
   },
@@ -387,12 +408,16 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   expenseText: {
     color: colors.expense,
   },
+  savingsText: {
+    color: colors.text,
+  },
   divider: {
     height: 1,
     backgroundColor: colors.border,
     marginVertical: spacing.sm,
   },
   analyticsEntryCard: {
+    ...touchTargetStyle,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -401,7 +426,6 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderWidth: 1,
     borderRadius: radius.md,
     padding: spacing.md,
-    minHeight: 48,
     marginBottom: spacing.md,
   },
   analyticsEntryLeft: {

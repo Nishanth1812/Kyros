@@ -33,7 +33,8 @@ export interface MonthAnalytics {
   dailyAverageExpenseMinor: MinorUnits;
   categoryBreakdown: CategorySpendingBreakdown[];
   topExpenseCategory: CategorySpendingBreakdown | null;
-  savingsRate: number;
+  /** Percentage of income saved; negative on a deficit, null when income is zero. */
+  savingsRate: number | null;
   transactionCount: number;
 }
 
@@ -114,9 +115,9 @@ export function calculateMonthAnalytics(
   const topExpenseCategory = categoryBreakdown.length > 0 ? categoryBreakdown[0] : null;
 
   const savingsRate =
-    totalIncomeMinor > 0 && totalIncomeMinor >= totalExpenseMinor
+    totalIncomeMinor > 0
       ? Math.round(((totalIncomeMinor - totalExpenseMinor) / totalIncomeMinor) * 100)
-      : 0;
+      : null;
 
   return {
     scope,

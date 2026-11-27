@@ -175,6 +175,13 @@ export const fontSize = {
   title: 26,
 } as const;
 
+/**
+ * Minimum interactive target (48 dp), derived from the body text size and two
+ * generous spacing steps. Shared through `layout.touchTargetStyle` so the
+ * primary screens and Settings cannot silently shrink their controls.
+ */
+export const minTouchTarget = fontSize.body + spacing.xxl;
+
 /** Neutral shadow so the same elevation reads on both palettes. */
 export const elevation = {
   shadowColor: '#000000',

@@ -1,17 +1,24 @@
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { useNavigation } from '@react-navigation/native';
+import {
+  type CompositeNavigationProp,
+  useNavigation,
+} from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ScrollView, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import ScreenHeader from '../components/ScreenHeader';
 import TransactionForm from '../components/TransactionForm';
-import type { RootTabParamList } from '../navigation/types';
+import type { RootStackParamList, RootTabParamList } from '../navigation/types';
 import { useTransactions } from '../state/TransactionsContext';
 import { responsivePageContentStyle } from '../theme/layout';
 import { useThemedStyles } from '../theme/ThemeContext';
 import { type ThemeColors, spacing } from '../theme/theme';
 
-type Navigation = BottomTabNavigationProp<RootTabParamList, 'Add'>;
+type Navigation = CompositeNavigationProp<
+  BottomTabNavigationProp<RootTabParamList, 'Add'>,
+  NativeStackNavigationProp<RootStackParamList>
+>;
 
 export default function AddTransactionScreen() {
   const styles = useThemedStyles(createStyles);
@@ -32,6 +39,7 @@ export default function AddTransactionScreen() {
       <ScreenHeader
         title="New transaction"
         subtitle="Record income or an expense. Entries stay on this device."
+        onSettingsPress={() => navigation.navigate('Settings')}
       />
       <TransactionForm
         categories={activeCategories}

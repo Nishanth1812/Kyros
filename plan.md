@@ -129,7 +129,7 @@ while preserving the local-first SQLite foundation.
   and category analysis.
 - RFC 4180 CSV transaction export via Storage Access Framework.
 
-### 0.6 — Feature expansion and sync readiness (implemented; release pending)
+### 0.6 — Feature expansion and sync readiness (released through 0.6.2)
 
 **Goal:** Expand local financial power with safe category management, recurring
 transaction schedules, savings goals with progress tracking, dynamic theme
@@ -160,10 +160,49 @@ contributions and concurrent updates; test system/light/dark themes across scree
 restore V1 and V2 backups; and confirm local deltas preserve newer edits and apply
 tombstones without data loss.
 
-### 0.7 and later — Connected cloud services and multi-device sync
+### 1.0 — Stable local-first launch
 
-**Goal:** Enable secure multi-device synchronization over cloud backends built on
-top of 0.6's delta engine, while retaining 100% offline-first local capability.
+**Goal:** Launch Kyros 1.0.0 as its first stable major release with the approved
+product-readiness improvements, without changing local-first behavior.
+
+**Scope:**
+
+- Ship the 0.6.2 feature set plus the implemented 1.0 improvements as Kyros
+  1.0.0: corrected savings-rate semantics (negative on a deficit, "Not available"
+  at zero income), backups that report the running app version, a dedicated
+  Settings screen for the existing theme choices, secondary screens as routes
+  with Android Back, refreshed screen hierarchy and 48 dp touch targets, and
+  clearer analytics charts with exact values and accessible labels.
+- Keep Android as the supported platform and publish a signed APK through the
+  existing GitHub Releases workflow.
+- Preserve the v4 local SQLite database, local backups, integer-paise
+  calculations, offline operation, and the existing signing key.
+- Keep accounts, cloud sync, network services, and multi-device sync out of 1.0.
+  Performance measurement and optimization remain pending until Android device
+  access is available; they are not part of the shipped 1.0 scope.
+
+**Release checks:** Run the automated tests and TypeScript check on the final
+code; install the 1.0.0 APK over 0.6.2 data signed with the existing key; verify
+all existing data and settings survive and new backups report 1.0.0; verify the
+APK signature and versionCode 13; complete the pending performance and on-device
+UI/accessibility checks; and review and update the published GitHub wiki before
+release reaches `main`.
+
+### 1.1 and later — Future product improvements
+
+**Candidate work:** Measure and address performance bottlenecks once Android
+device access is available, using the pending baseline in
+`docs/superpowers/performance/2026-11-27-kyros-1-0-baseline.md`. Reconsider
+multi-device synchronization only when a concrete user need and its privacy and
+account requirements are known. The analytics, interface, and Settings
+improvements shipped in 1.0 are not future candidates. No dates or scope are
+committed for later releases.
+
+#### Connected services and multi-device sync (unscheduled)
+
+**Goal:** Enable secure multi-device synchronization over cloud backends built
+on top of 0.6's delta engine, while retaining 100% offline-first local
+capability.
 
 **API compatibility:** Do not add version prefixes to API routes. Evolve the
 API compatibly and plan migrations for changes that cannot be made additively.
@@ -185,7 +224,7 @@ sync.
 
 ## Release delivery checklist
 
-For each release to `main`:
+Before each release reaches `main`:
 
 1. Complete that release's feature checks and verify upgrade behavior from the
    previous signed APK with existing data.

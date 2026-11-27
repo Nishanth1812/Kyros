@@ -1,3 +1,4 @@
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useMemo, useState } from 'react';
 import {
   Alert,
@@ -15,19 +16,18 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ScreenHeader from '../components/ScreenHeader';
 import { formatMinorUnits, parseAmountToMinorUnits } from '../lib/money';
 import { formatFrequency } from '../lib/recurringEngine';
+import type { RootStackParamList } from '../navigation/types';
 import { useTransactions } from '../state/TransactionsContext';
 import type { RecurringFrequency, RecurringTransaction, TransactionType } from '../storage/types';
 import { responsivePageContentStyle } from '../theme/layout';
 import { useTheme, useThemedStyles } from '../theme/ThemeContext';
 import { type ThemeColors, elevation, fontSize, radius, spacing } from '../theme/theme';
 
-interface RecurringTransactionsScreenProps {
-  onBack?: () => void;
-}
+type Props = NativeStackScreenProps<RootStackParamList, 'RecurringTransactions'>;
 
 const FREQUENCIES: RecurringFrequency[] = ['daily', 'weekly', 'monthly', 'yearly'];
 
-export default function RecurringTransactionsScreen({ onBack }: RecurringTransactionsScreenProps) {
+export default function RecurringTransactionsScreen({ navigation }: Props) {
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
@@ -151,16 +151,14 @@ export default function RecurringTransactionsScreen({ onBack }: RecurringTransac
       style={styles.container}
       contentContainerStyle={[responsivePageContentStyle, { paddingTop: insets.top + spacing.md }]}
     >
-      {onBack && (
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={onBack}
-          accessibilityRole="button"
-          accessibilityLabel="Back to Dashboard"
-        >
-          <Text style={styles.backButtonText}>← Back</Text>
-        </TouchableOpacity>
-      )}
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => navigation.goBack()}
+        accessibilityRole="button"
+        accessibilityLabel="Back to previous screen"
+      >
+        <Text style={styles.backButtonText}>← Back</Text>
+      </TouchableOpacity>
 
       <ScreenHeader
         title="Recurring Schedules"
@@ -249,7 +247,14 @@ export default function RecurringTransactionsScreen({ onBack }: RecurringTransac
 
       {/* Add Recurring Modal */}
       {showAddModal && (
-        <Modal visible={true} transparent={true} animationType="fade">
+        <Modal
+          visible={true}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => {
+            if (!isSubmitting) setShowAddModal(false);
+          }}
+        >
           <View style={styles.modalOverlay}>
             <View style={styles.modalCard}>
               <ScrollView keyboardShouldPersistTaps="handled">
