@@ -59,6 +59,7 @@
 
 - [x] Run `bun test tests` and expect exit code 0.
 - [x] Run `npm run typecheck` and expect exit code 0.
+- [x] Confirm the push-to-`dev` CI quality job and Android debug build succeed.
 - [ ] Install the signed 1.0.0 APK over 0.6.2 data signed by the existing key. Confirm schema v4 and all representative data, settings, backup, and core transaction flows remain intact.
 - [ ] Verify CI output shows APK alignment, signature verification, certificate match, and versionCode 13.
 
