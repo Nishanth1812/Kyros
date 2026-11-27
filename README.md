@@ -1,6 +1,6 @@
 # Kyros
 
-Kyros 1.0.0 is a local-first Android app for recording, organizing, and reviewing
+Kyros 1.0.1 is a local-first Android app for recording, organizing, and reviewing
 income and expenses, with budgets, savings goals, recurring schedules, analytics,
 and versioned local backups. Financial data stays in on-device SQLite and money is
 stored as integer paise. No account, network, or backend is required.
@@ -45,7 +45,7 @@ stored as integer paise. No account, network, or backend is required.
   bottom tabs. Data Safety opens from Settings. Analytics, recurring transactions, goals, and category management open as
   secondary screens and return with the in-app back action or Android system Back.
 - **Readable backups:** new local JSON backups record the app version that created them
-  (1.0.0); V1 backups remain restorable.
+  (1.0.1); V1 backups remain restorable.
 - **Responsive screens:** all tabs and nested screens respect safe areas, stay
   centered on wider displays, and keep actions usable on narrow phones in both
   light and dark themes.
@@ -92,8 +92,8 @@ key and need none of this. See
 [ANDROID_RELEASE.md](ANDROID_RELEASE.md) for setup, release steps, and versioning
 rules. Each verified main release gets an annotated `vX.Y.Z` tag; rerunning the
 same commit reuses its version. The first release on a new version line uses the
-exact source version. Kyros 1.0.0 follows `v0.6.2` (versionCode 12), so CI
-publishes it with versionCode 13.
+exact source version. Kyros 1.0.1 follows `v1.0.0` (versionCode 13), so CI
+publishes it with versionCode 14.
 
 ## Structure
 
@@ -129,8 +129,8 @@ index.ts           React Native root component registration
   negative percentage and a month with no income shows "Not available" instead
   of 0%; both are shown on Dashboard and Analytics.
 - **Backups:** new local JSON exports record the running app version from the
-  package manifest (1.0.0) in metadata. The backup format and restore rules are
-  unchanged, and older backups remain restorable.
+  package manifest (1.0.1) in metadata. Older backups remain restorable; current
+  backups preserve renamed and deleted built-in categories.
 - **Budgets:** limits recur each local calendar month and are saved as positive
   integer paise. Progress is derived only from expense transactions in the
   current local month (first through last day, inclusive), so income is excluded
@@ -139,7 +139,7 @@ index.ts           React Native root component registration
   one overall limit and one per expense category, with no rollover.
 - **Android range:** minimum Android 7.0 (API 24), with portrait layout.
   Package `com.kyros.app`, source `versionCode` 9,
-  `versionName` 1.0.0. CI derives published version codes from release tags.
+  `versionName` 1.0.1. CI derives published version codes from release tags.
 - **Ordering:** the storage layer sorts by date, then creation time, then id,
   all descending, so the newest entry is always first.
 - **Migration:** the app migrates supported SQLite databases through schema v4

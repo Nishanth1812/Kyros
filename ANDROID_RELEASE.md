@@ -1,6 +1,6 @@
-# Android Release Guidance — Kyros 1.0.0
+# Android Release Guidance — Kyros 1.0.1
 
-This document describes how to produce a **signed** release build of Kyros 1.0.0 and
+This document describes how to produce a **signed** release build of Kyros 1.0.1 and
 how to install and upgrade it. Kyros uses React Native and the Android Gradle
 wrapper in `android/`. GitHub Actions builds and verifies signed APKs on pushes
 to `main` (§9).
@@ -22,9 +22,9 @@ Related: [README.md](README.md) (development setup and product details).
   .\gradlew.bat :app:assembleRelease
   ```
 
-## Scope for the 1.0 release
+## Scope for the 1.0.1 release
 
-The 1.0 candidate includes the approved product-readiness work implemented on
+The 1.0 release includes the product-readiness work implemented on
 `dev`: corrected savings-rate presentation, backups that record the running app
 version, a dedicated Settings screen for the existing theme choices, secondary
 screens reached through a native stack with Android Back, a refreshed screen
@@ -32,6 +32,11 @@ hierarchy with 48 dp touch targets, and clearer analytics charts with exact
 values and accessible labels. It remains local-first: no account, cloud sync,
 backend, or network transport is included, and schema v4 with integer-paise
 storage in local SQLite is unchanged.
+
+The 1.0.1 patch simplifies the Dashboard, moves Data Safety into Settings,
+and adds category editing from Add, including built-in categories. It improves
+category controls and dark-mode amount visibility. Current backups preserve
+renamed and deleted built-in categories; V1 backups remain supported.
 
 Android performance measurement and any optimization remain pending until a
 device is available; no timing or performance result is claimed here. The
@@ -118,8 +123,8 @@ Test-Path $env:KYROS_RELEASE_STORE_FILE   # must be True
 CI computes the release version and `versionCode` for each new release from
 `main` (§9). To change the source version, update `package.json` and
 `android/app/build.gradle` together. Keep Android API 24 as the minimum. The
-1.0.0 source base uses `versionCode` 9. The latest published release,
-`v0.6.2`, used versionCode 12; CI will publish 1.0.0 with versionCode 13. CI
+1.0.1 source base uses `versionCode` 9. The latest published release,
+`v1.0.0`, used versionCode 13; CI will publish 1.0.1 with versionCode 14. CI
 derives published version codes from annotated release tags and does not change
 the source values.
 
@@ -190,15 +195,15 @@ Get-ChildItem Env:KYROS_RELEASE_* | Remove-Item
 - **Same key is mandatory.** PackageManager only applies an update when the new
   APK is signed with the same key as the installed one. Reuse the §1 keystore
   for every release.
-- **Upgrade test (0.6.2 → 1.0.0):** install the previous signed release with
+- **Upgrade test (1.0.0 → 1.0.1):** install the previous signed release with
   representative transactions, categories, budgets, recurring schedules, goals,
-  and a V2 backup. Install 1.0.0 with the same key. Confirm the database remains
+  and a V2 backup. Install 1.0.1 with the same key. Confirm the database remains
   at schema v4 and all saved data and settings remain available. Check the main
   transaction, dashboard, history, budget, goal, recurring, backup, and export
   flows. Also confirm the 1.0 behavior survives the upgrade: the Settings theme
   choice persists, secondary screens open and return with Android Back, the
   savings rate is negative for a deficit and "Not available" at zero income,
-  chart labels show exact values, and a new backup records app version 1.0.0.
+  chart labels show exact values, and a new backup records app version 1.0.1.
   This is a pending manual check until a device and signed APK are available.
 - **Backup compatibility:** restore a V1 backup from an earlier release and a
   V2 backup containing goals, schedules, and tombstones. Confirm restore replaces
