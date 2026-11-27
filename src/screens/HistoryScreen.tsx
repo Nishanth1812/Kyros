@@ -1,5 +1,9 @@
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { useNavigation } from '@react-navigation/native';
+import {
+  type CompositeNavigationProp,
+  useNavigation,
+} from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useMemo, useState } from 'react';
 import {
   Alert,
@@ -32,14 +36,17 @@ import {
   filterTransactionsByQueryAndTags,
   parseTags,
 } from '../lib/transactionSearch';
-import type { RootTabParamList } from '../navigation/types';
+import type { RootStackParamList, RootTabParamList } from '../navigation/types';
 import type { NewTransactionInput, Transaction } from '../storage';
 import { useTransactions } from '../state/TransactionsContext';
 import { responsivePageWidthStyle } from '../theme/layout';
 import { useTheme, useThemedStyles } from '../theme/ThemeContext';
 import { type ThemeColors, fontSize, radius, spacing } from '../theme/theme';
 
-type Navigation = BottomTabNavigationProp<RootTabParamList, 'History'>;
+type Navigation = CompositeNavigationProp<
+  BottomTabNavigationProp<RootTabParamList, 'History'>,
+  NativeStackNavigationProp<RootStackParamList>
+>;
 
 function toMessage(error: unknown): string {
   return error instanceof Error && error.message
@@ -205,6 +212,7 @@ export default function HistoryScreen() {
                 : entryLabel(transactions.length)
               : 'Your saved entries'
           }
+          onSettingsPress={() => navigation.navigate('Settings')}
         />
       </View>
 

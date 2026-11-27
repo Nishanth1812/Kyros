@@ -1,3 +1,9 @@
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import {
+  type CompositeNavigationProp,
+  useNavigation,
+} from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useMemo, useState } from 'react';
 import {
   Alert,
@@ -20,12 +26,17 @@ import {
 } from '../lib/budgetProgress';
 import { currentMonthBounds, currentMonthLabel } from '../lib/dates';
 import { formatMinorUnits } from '../lib/money';
+import type { RootStackParamList, RootTabParamList } from '../navigation/types';
 import type { Budget, NewBudgetInput } from '../storage';
 import { useTransactions } from '../state/TransactionsContext';
 import { responsivePageContentStyle } from '../theme/layout';
 import { useTheme, useThemedStyles } from '../theme/ThemeContext';
 import { type ThemeColors, elevation, fontSize, radius, spacing } from '../theme/theme';
-import FinancialGoalsScreen from './FinancialGoalsScreen';
+
+type Navigation = CompositeNavigationProp<
+  BottomTabNavigationProp<RootTabParamList, 'Budgets'>,
+  NativeStackNavigationProp<RootStackParamList>
+>;
 
 function toMessage(error: unknown): string {
   return error instanceof Error && error.message
@@ -114,6 +125,7 @@ export default function BudgetsScreen() {
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const navigation = useNavigation<Navigation>();
   const {
     budgets,
     transactions,
@@ -126,7 +138,6 @@ export default function BudgetsScreen() {
     deleteBudget,
   } = useTransactions();
   const [refreshing, setRefreshing] = useState(false);
-  const [showGoals, setShowGoals] = useState(false);
   const [editing, setEditing] = useState<EditingScope | null>(null);
 
   const expenseCategories = useMemo(
@@ -246,10 +257,6 @@ export default function BudgetsScreen() {
 
   const activeGoalCount = goals.filter((goal) => goal.status === 'active').length;
 
-  if (showGoals) {
-    return <FinancialGoalsScreen onBack={() => setShowGoals(false)} />;
-  }
-
   return (
     <ScrollView
       style={styles.screen}
@@ -266,10 +273,11 @@ export default function BudgetsScreen() {
       <ScreenHeader
         title="Budgets"
         subtitle="Set a recurring monthly limit for all expenses or for individual expense categories. Limits reset each calendar month."
+        onSettingsPress={() => navigation.navigate('Settings')}
       />
 
       <Pressable
-        onPress={() => setShowGoals(true)}
+        onPress={() => navigation.navigate('FinancialGoals')}
         accessibilityRole="button"
         accessibilityLabel={`Savings goals${
           activeGoalCount > 0 ? `: ${activeGoalCount} active` : ''

@@ -1,6 +1,6 @@
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
 import {
-  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -19,28 +19,23 @@ import {
   type MonthScope,
 } from '../lib/analytics';
 import { formatMinorUnits } from '../lib/money';
+import type { RootStackParamList } from '../navigation/types';
 import { useTransactions } from '../state/TransactionsContext';
 import { responsivePageContentStyle, responsivePageWidthStyle } from '../theme/layout';
 import { useTheme, useThemedStyles } from '../theme/ThemeContext';
 import { type ThemeColors, elevation, fontSize, radius, spacing } from '../theme/theme';
 
-export interface AnalyticsScreenProps {
-  visible?: boolean;
-  onClose?: () => void;
-  initialScope?: MonthScope;
-}
+type Props = NativeStackScreenProps<RootStackParamList, 'Analytics'>;
 
-export default function AnalyticsScreen({
-  visible = true,
-  onClose,
-  initialScope,
-}: AnalyticsScreenProps) {
+export default function AnalyticsScreen({ navigation, route }: Props) {
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const { transactions, categories } = useTransactions();
   const currentScope = getMonthScope(new Date());
-  const [scope, setScope] = useState<MonthScope>(() => initialScope ?? currentScope);
+  const [scope, setScope] = useState<MonthScope>(
+    () => route.params?.initialScope ?? currentScope
+  );
 
   const analytics = calculateMonthAnalytics(transactions, categories, scope);
   const trends = calculateMultiMonthTrends(transactions, 6, new Date(scope.year, scope.month - 1, 1));
@@ -57,20 +52,18 @@ export default function AnalyticsScreen({
           </Text>
           <Text style={styles.subtitle}>Historical trends and spending insights</Text>
         </View>
-        {onClose && (
-          <Pressable
-            onPress={onClose}
-            accessible={true}
-            accessibilityRole="button"
-            accessibilityLabel="Close analytics"
-            style={({ pressed }) => [
-              styles.closeButton,
-              pressed ? styles.closeButtonPressed : null,
-            ]}
-          >
-            <Text style={styles.closeText}>Close</Text>
-          </Pressable>
-        )}
+        <Pressable
+          onPress={() => navigation.goBack()}
+          accessible
+          accessibilityRole="button"
+          accessibilityLabel="Back to previous screen"
+          style={({ pressed }) => [
+            styles.closeButton,
+            pressed ? styles.closeButtonPressed : null,
+          ]}
+        >
+          <Text style={styles.closeText}>← Back</Text>
+        </Pressable>
       </View>
 
       <ScrollView
@@ -203,14 +196,6 @@ export default function AnalyticsScreen({
       </ScrollView>
     </View>
   );
-
-  if (onClose) {
-    return (
-      <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-        {content}
-      </Modal>
-    );
-  }
 
   return content;
 }

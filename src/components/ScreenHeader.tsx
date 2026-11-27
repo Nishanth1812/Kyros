@@ -1,22 +1,41 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useThemedStyles } from '../theme/ThemeContext';
-import { type ThemeColors, fontSize, spacing } from '../theme/theme';
+import { type ThemeColors, fontSize, radius, spacing } from '../theme/theme';
 
 export default function ScreenHeader({
   title,
   subtitle,
+  onSettingsPress,
 }: {
   title: string;
   subtitle?: string;
+  onSettingsPress?: () => void;
 }) {
   const styles = useThemedStyles(createStyles);
   return (
     <View style={styles.container}>
-      <Text style={styles.title} accessibilityRole="header">
-        {title}
-      </Text>
-      {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+      <View style={styles.textContainer}>
+        <Text style={styles.title} accessibilityRole="header">
+          {title}
+        </Text>
+        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+      </View>
+      {onSettingsPress ? (
+        <Pressable
+          onPress={onSettingsPress}
+          accessible
+          accessibilityRole="button"
+          accessibilityLabel="Open settings"
+          accessibilityHint="Change appearance and view app information"
+          style={({ pressed }) => [
+            styles.settingsButton,
+            pressed ? styles.settingsButtonPressed : null,
+          ]}
+        >
+          <Text style={styles.settingsButtonText}>⚙</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -24,7 +43,12 @@ export default function ScreenHeader({
 const createStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     container: {
+      flexDirection: 'row',
+      alignItems: 'center',
       marginBottom: spacing.xl,
+    },
+    textContainer: {
+      flex: 1,
     },
     title: {
       fontSize: fontSize.title,
@@ -36,5 +60,23 @@ const createStyles = (colors: ThemeColors) =>
       fontSize: fontSize.body,
       lineHeight: 22,
       color: colors.textMuted,
+    },
+    settingsButton: {
+      minHeight: 48,
+      minWidth: 48,
+      marginLeft: spacing.sm,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+    },
+    settingsButtonPressed: {
+      backgroundColor: colors.subtleGreen,
+    },
+    settingsButtonText: {
+      fontSize: fontSize.heading,
+      color: colors.primary,
     },
   });

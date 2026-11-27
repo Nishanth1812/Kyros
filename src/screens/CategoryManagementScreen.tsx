@@ -1,3 +1,4 @@
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useMemo, useState } from 'react';
 import {
   Alert,
@@ -13,17 +14,16 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import ScreenHeader from '../components/ScreenHeader';
+import type { RootStackParamList } from '../navigation/types';
 import { useTransactions } from '../state/TransactionsContext';
 import { responsivePageContentStyle } from '../theme/layout';
 import type { Category, TransactionType } from '../storage/types';
 import { useTheme, useThemedStyles } from '../theme/ThemeContext';
 import { type ThemeColors, elevation, fontSize, radius, spacing } from '../theme/theme';
 
-interface CategoryManagementScreenProps {
-  onBack?: () => void;
-}
+type Props = NativeStackScreenProps<RootStackParamList, 'CategoryManagement'>;
 
-export default function CategoryManagementScreen({ onBack }: CategoryManagementScreenProps) {
+export default function CategoryManagementScreen({ navigation }: Props) {
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
@@ -148,16 +148,14 @@ export default function CategoryManagementScreen({ onBack }: CategoryManagementS
       style={styles.container}
       contentContainerStyle={[responsivePageContentStyle, { paddingTop: insets.top + spacing.md }]}
     >
-      {onBack && (
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={onBack}
-          accessibilityRole="button"
-          accessibilityLabel="Back to Data Management"
-        >
-          <Text style={styles.backButtonText}>← Back</Text>
-        </TouchableOpacity>
-      )}
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => navigation.goBack()}
+        accessibilityRole="button"
+        accessibilityLabel="Back to previous screen"
+      >
+        <Text style={styles.backButtonText}>← Back</Text>
+      </TouchableOpacity>
 
       <ScreenHeader
         title="Category Management"
