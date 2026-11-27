@@ -34,7 +34,7 @@ Kyros should let people record transactions quickly and understand their monthly
 - No accounts, cloud sync, backend, remote storage, or product telemetry.
 - No database schema change, change to local-only financial data storage, or loss of existing records.
 - No new charting package or speculative analytics features.
-- No redesign of the product's financial model beyond clarifying and validating the metrics that already exist.
+- No redesign of the product's financial model beyond the approved savings-rate edge-case behavior below.
 - No change to the supported Android minimum (API 24) or addition of another supported platform.
 
 ## Approaches considered
@@ -78,7 +78,7 @@ Use the current design tokens and shared UI components where they fit. Keep inte
 
 All amounts remain integer paise and calculations remain local. Tests and explanatory labels must cover zero activity, missing category names, income of zero, and expenses greater than income.
 
-The current savings-rate calculation reports `0%` whenever expenses exceed income. Proposed behavior is `(income - expenses) / income`, allowing a negative rate when spending exceeds income, and showing “Not available” when there is no income. This is a financial interpretation change and requires owner approval before implementation; the design must not silently change it.
+The current savings-rate calculation reports `0%` whenever expenses exceed income. The approved behavior is `(income - expenses) / income * 100`, allowing a negative rate when spending exceeds income and showing “Not available” when there is no income. The negative rate distinguishes a deficit from break-even. Add coverage for positive, negative, and unavailable cases.
 
 ### Performance
 
@@ -120,5 +120,4 @@ New JSON exports must identify the version of Kyros that created them. Keep the 
 
 ## Decisions still needed from the owner
 
-- Approve or change the proposed negative savings-rate and no-income behavior.
-- Approve this design before implementation begins. A task-by-task implementation plan follows that approval.
+- Approve this complete design before implementation begins. A task-by-task implementation plan follows that approval.
