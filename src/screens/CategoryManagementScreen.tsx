@@ -2,6 +2,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useMemo, useState } from 'react';
 import {
   Alert,
+  Image,
   Modal,
   Pressable,
   ScrollView,
@@ -235,7 +236,7 @@ export default function CategoryManagementScreen({ navigation, route }: Props) {
                     accessibilityRole="button"
                     accessibilityLabel={`Edit category ${cat.name}`}
                   >
-                    <Text style={styles.actionBtnText}>✎</Text>
+                    <Image source={require('../../assets/category-icons/edit.png')} style={styles.actionIcon} />
                   </TouchableOpacity>
 
                   {cat.isArchived ? (
@@ -250,12 +251,12 @@ export default function CategoryManagementScreen({ navigation, route }: Props) {
                   ) : null}
 
                   <TouchableOpacity
-                    style={[styles.actionBtn, styles.deleteBtn]}
+                    style={styles.actionBtn}
                     onPress={() => handleStartDelete(cat)}
                     accessibilityRole="button"
                     accessibilityLabel={`Delete category ${cat.name}`}
                   >
-                    <Text style={[styles.actionBtnText, styles.deleteBtnText]}>🗑</Text>
+                    <Image source={require('../../assets/category-icons/delete.png')} style={styles.actionIcon} />
                   </TouchableOpacity>
                 </View>
             </View>
@@ -492,19 +493,25 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     ...elevation,
   },
   categoryRow: {
-    paddingVertical: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.xs,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
   categoryInfo: {
-    marginBottom: spacing.xs,
+    flex: 1,
+    minWidth: 0,
   },
   nameBadgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     gap: spacing.sm,
   },
   categoryName: {
+    flexShrink: 1,
     fontSize: fontSize.body,
     fontWeight: '700',
     color: colors.text,
@@ -539,13 +546,14 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   actionsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    justifyContent: 'flex-end',
+    marginLeft: 'auto',
+    maxWidth: '60%',
     gap: spacing.sm,
-    marginTop: spacing.sm,
   },
   actionBtn: {
-    minHeight: 48,
-    minWidth: 48,
-    paddingHorizontal: spacing.md,
+    minHeight: 52,
+    minWidth: 52,
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: radius.md,
@@ -558,16 +566,14 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontWeight: '600',
     color: colors.text,
   },
+  actionIcon: {
+    width: 36,
+    height: 36,
+    tintColor: colors.textSecondary,
+  },
   unarchiveBtn: {
     backgroundColor: colors.subtleGreen,
     borderColor: colors.income,
-  },
-  deleteBtn: {
-    backgroundColor: colors.subtleRed,
-    borderColor: colors.expense,
-  },
-  deleteBtnText: {
-    color: colors.expense,
   },
   modalOverlay: {
     flex: 1,
