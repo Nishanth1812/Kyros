@@ -49,8 +49,18 @@ export default function SettingsScreen({ navigation }: Props) {
 
       <ScreenHeader
         title="Settings"
-        subtitle="Appearance and app information"
+        subtitle="Appearance, data, and app information"
       />
+
+      <Pressable
+        onPress={() => navigation.navigate('Data')}
+        accessibilityRole="button"
+        accessibilityLabel="Data safety, backups and exports"
+        style={({ pressed }) => [styles.card, styles.dataButton, pressed ? styles.pressed : null]}
+      >
+        <Text style={styles.cardTitle}>Data Safety</Text>
+        <Text style={styles.aboutText}>Manage backups, exports, and data recovery</Text>
+      </Pressable>
 
       <View style={styles.card}>
         <Text style={styles.cardTitle} accessibilityRole="header">
@@ -106,8 +116,7 @@ export default function SettingsScreen({ navigation }: Props) {
         <View style={styles.divider} />
         <Text style={styles.aboutText}>
           Kyros is a private, local-first finance tracker. Your entries stay in
-          on-device storage; there is no account and no cloud sync. Backups and
-          data tools are on the Data tab.
+          on-device storage; there is no account and no cloud sync.
         </Text>
       </View>
     </ScrollView>
@@ -141,6 +150,9 @@ const createStyles = (colors: ThemeColors) =>
       padding: spacing.lg,
       marginBottom: spacing.md,
       ...elevation,
+    },
+    dataButton: {
+      ...touchTargetStyle,
     },
     cardTitle: {
       fontSize: fontSize.heading,

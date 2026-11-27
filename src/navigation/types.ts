@@ -1,12 +1,11 @@
 import type { MonthScope } from '../lib/analytics';
 
-/** The five bottom destinations kept across the 1.0 navigation change. */
+/** Primary bottom navigation destinations. */
 export type RootTabParamList = {
   Dashboard: undefined;
   Add: undefined;
   History: undefined;
   Budgets: undefined;
-  Data: undefined;
 };
 
 /**
@@ -18,6 +17,7 @@ export type RootStackParamList = {
   MainTabs: undefined;
   Analytics: { initialScope?: MonthScope } | undefined;
   Settings: undefined;
+  Data: undefined;
   RecurringTransactions: undefined;
   FinancialGoals: undefined;
   CategoryManagement: undefined;
@@ -29,7 +29,6 @@ export const PRIMARY_TAB_ROUTES = [
   'Add',
   'History',
   'Budgets',
-  'Data',
 ] as const satisfies ReadonlyArray<keyof RootTabParamList>;
 
 /** Single source of truth for the root stack; mirrored by the stack navigator. */
@@ -37,6 +36,7 @@ export const ROOT_STACK_ROUTES = [
   'MainTabs',
   'Analytics',
   'Settings',
+  'Data',
   'RecurringTransactions',
   'FinancialGoals',
   'CategoryManagement',

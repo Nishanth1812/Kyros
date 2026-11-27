@@ -1,8 +1,4 @@
-import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import {
-  type CompositeNavigationProp,
-  useNavigation,
-} from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useEffect, useState } from 'react';
 import {
@@ -20,7 +16,7 @@ import ScreenHeader from '../components/ScreenHeader';
 import { formatTransactionsToCsv } from '../lib/csvExport';
 import { getSyncStorage } from '../lib/database';
 import { defaultFileBridge } from '../lib/fileBridge';
-import type { RootStackParamList, RootTabParamList } from '../navigation/types';
+import type { RootStackParamList } from '../navigation/types';
 import { useTransactions } from '../state/TransactionsContext';
 import { validateBackupPayload } from '../storage/backupValidation';
 import type { SyncStorageInfo } from '../storage/types';
@@ -28,10 +24,7 @@ import { responsivePageContentStyle, touchTargetStyle } from '../theme/layout';
 import { useTheme, useThemedStyles } from '../theme/ThemeContext';
 import { type ThemeColors, elevation, fontSize, radius, spacing } from '../theme/theme';
 
-type Navigation = CompositeNavigationProp<
-  BottomTabNavigationProp<RootTabParamList, 'Data'>,
-  NativeStackNavigationProp<RootStackParamList>
->;
+type Navigation = NativeStackNavigationProp<RootStackParamList, 'Data'>;
 
 function formatSyncTimestamp(timestamp: number): string {
   if (!timestamp || timestamp <= 0) return 'No changes recorded yet';
@@ -188,10 +181,17 @@ export default function DataManagementScreen() {
       contentContainerStyle={[responsivePageContentStyle, { paddingTop: insets.top + spacing.lg }]}
       accessible={false}
     >
+      <TouchableOpacity
+        onPress={() => navigation.goBack()}
+        accessibilityRole="button"
+        accessibilityLabel="Back to Settings"
+        style={styles.backButton}
+      >
+        <Text style={styles.backButtonText}>← Back</Text>
+      </TouchableOpacity>
       <ScreenHeader
         title="Data Safety"
         subtitle="Manage local backups, exports, and data recovery"
-        onSettingsPress={() => navigation.navigate('Settings')}
       />
 
       {feedback && (
@@ -372,6 +372,18 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  backButton: {
+    ...touchTargetStyle,
+    alignSelf: 'flex-start',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  backButtonText: {
+    fontSize: fontSize.body,
+    fontWeight: '700',
+    color: colors.primary,
   },
   banner: {
     padding: spacing.md,
