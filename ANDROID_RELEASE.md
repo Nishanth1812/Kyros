@@ -22,6 +22,24 @@ Related: [README.md](README.md) (development setup and product details).
   .\gradlew.bat :app:assembleRelease
   ```
 
+## Scope for the 1.0 release
+
+The 1.0 candidate includes the approved product-readiness work implemented on
+`dev`: corrected savings-rate presentation, backups that record the running app
+version, a dedicated Settings screen for the existing theme choices, secondary
+screens reached through a native stack with Android Back, a refreshed screen
+hierarchy with 48 dp touch targets, and clearer analytics charts with exact
+values and accessible labels. It remains local-first: no account, cloud sync,
+backend, or network transport is included, and schema v4 with integer-paise
+storage in local SQLite is unchanged.
+
+Android performance measurement and any optimization remain pending until a
+device is available; no timing or performance result is claimed here. The
+on-device install/upgrade, rendered UI/accessibility, and signed-APK checks in
+§6 and §9 are verification steps to perform, not completed checks. Wiki guidance
+is reviewed and updated before a release reaches `main`, not as part of the
+dev-stage documentation alignment.
+
 ## 1. Signing key (once, before any release build)
 
 Release builds must use a dedicated, long-lived keystore stored **outside** the
@@ -177,7 +195,11 @@ Get-ChildItem Env:KYROS_RELEASE_* | Remove-Item
   and a V2 backup. Install 1.0.0 with the same key. Confirm the database remains
   at schema v4 and all saved data and settings remain available. Check the main
   transaction, dashboard, history, budget, goal, recurring, backup, and export
-  flows.
+  flows. Also confirm the 1.0 behavior survives the upgrade: the Settings theme
+  choice persists, secondary screens open and return with Android Back, the
+  savings rate is negative for a deficit and "Not available" at zero income,
+  chart labels show exact values, and a new backup records app version 1.0.0.
+  This is a pending manual check until a device and signed APK are available.
 - **Backup compatibility:** restore a V1 backup from an earlier release and a
   V2 backup containing goals, schedules, and tombstones. Confirm restore replaces
   all synchronized tables atomically and leaves valid category references.
@@ -226,8 +248,8 @@ The single push-only GitHub Actions workflow handles checks and signed APK relea
   Actions artifact for 30 days. Pushes to `dev` do not produce release APKs.
 - **Release notes.** Add `release-notes/vX.Y.Z.md` before merging the release
   into `main`. If that file is absent, GitHub generates notes from the changes.
-- **Wiki.** For each main release, review the [wiki](https://github.com/Nishanth1812/Kyros/wiki)
-  against the released changes. Update affected usage, setup, data, and release
+- **Wiki.** Before each release reaches `main`, review the [wiki](https://github.com/Nishanth1812/Kyros/wiki)
+  against the changes being released. Update affected usage, setup, data, and release
   guidance as needed, then verify the published pages. Release notes do not
   replace updating existing guidance.
 

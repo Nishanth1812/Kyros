@@ -7,8 +7,10 @@ stored as integer paise. No account, network, or backend is required.
 
 ## Features (1.0)
 
-- **Visual analytics and trends:** explore 6-month income vs. expense trajectories,
-  proportional category spending distribution bars, daily average spend, and savings rates.
+- **Visual analytics and trends:** explore 6-month income vs. expense trajectories with
+  a stated scale and exact values, proportional category spending distribution, daily
+  average spend, and savings rates. A deficit shows a negative rate; a month with no
+  income shows "Not available".
 - **Historical month navigation:** review past months on the Dashboard with instant
   recalculation of income, expenses, and category breakdown, plus a one-tap current-month return.
 - **CSV spreadsheet export:** export complete transaction history to standard comma-separated
@@ -33,13 +35,21 @@ stored as integer paise. No account, network, or backend is required.
   review due items on the Dashboard, and apply selected entries to history.
 - **Savings goals:** save targets with optional deadlines, track deposits and
   withdrawals, and see progress and the monthly amount needed to reach a target.
-- **Appearance and History search:** choose system, light, or dark appearance;
-  search transaction descriptions, category names, and amounts, or filter by `#tags`.
+- **Settings and appearance:** choose system, light, or dark appearance in Settings, a
+  secondary screen reachable from every primary tab. Appearance controls are no longer
+  on the Data tab, and Settings shows the app version with no account or sync controls.
+- **History search:** search transaction descriptions, category names, and amounts, or
+  filter by `#tags`.
+- **Consistent navigation:** Dashboard, Add, History, Budgets, and Data remain the five
+  bottom tabs. Analytics, recurring transactions, goals, and category management open as
+  secondary screens and return with the in-app back action or Android system Back.
+- **Readable backups:** new local JSON backups record the app version that created them
+  (1.0.0); V1 backups remain restorable.
 - **Responsive screens:** all tabs and nested screens respect safe areas, stay
   centered on wider displays, and keep actions usable on narrow phones in both
   light and dark themes.
-- **Accessibility & Quality:** minimum 48×48 dp touch targets across buttons, chips,
-  and pickers; descriptive accessibility labels and roles; and layout scaling.
+- **Accessibility & Quality:** interactive controls use a shared 48×48 dp minimum
+  target, with descriptive accessibility labels and roles and responsive layout scaling.
 - **Sync readiness:** export and apply timestamped local deltas with conflict
   handling and deletion markers. There is no cloud transport; SQLite stays on-device.
 - **Backup V2:** backups include goals, recurring schedules, category state,
@@ -91,9 +101,9 @@ src/
   storage/       amounts, validation, schema, categories, budgets, goals, backup and sync storage
   lib/           database setup, INR money, dates, filters, summaries and domain calculations
   state/         shared transaction, budget, goal and recurring state
-  navigation/    bottom tabs (Dashboard, Add, History, Budgets, and Data)
-  components/    transaction and budget forms, category picker, edit modal, filters, row, list, and states
-  screens/       AddTransactionScreen, HistoryScreen, DashboardScreen, BudgetsScreen, and DataManagementScreen
+  navigation/    bottom tabs (Dashboard, Add, History, Budgets, and Data) and a native stack for Settings, Analytics, Recurring, Goals, and Categories
+  components/    transaction and budget forms, category picker, edit modal, filters, row, list, charts, and shared states
+  screens/       Dashboard, Add, History, Budgets, Data, Settings, Analytics, Recurring, Goals, and Category management screens
   theme/         system/light/dark palettes, persisted theme mode, spacing and typography
 App.tsx            providers and root navigator
 index.ts           React Native root component registration
@@ -113,6 +123,13 @@ index.ts           React Native root component registration
 - **Dashboard periods:** the dashboard shows lifetime net balance (all income
   minus all expenses), current-calendar-month income and expense totals, and
   current-month expenses by category. The month follows the device's local date.
+- **Savings rate:** derived from the selected month's income and expenses in
+  integer paise as `(income - expenses) / income * 100`. A deficit produces a
+  negative percentage and a month with no income shows "Not available" instead
+  of 0%; both are shown on Dashboard and Analytics.
+- **Backups:** new local JSON exports record the running app version from the
+  package manifest (1.0.0) in metadata. The backup format and restore rules are
+  unchanged, and older backups remain restorable.
 - **Budgets:** limits recur each local calendar month and are saved as positive
   integer paise. Progress is derived only from expense transactions in the
   current local month (first through last day, inclusive), so income is excluded
