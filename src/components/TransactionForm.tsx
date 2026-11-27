@@ -198,7 +198,35 @@ export default function TransactionForm({
 
   return (
     <View style={styles.card}>
-      <Text style={styles.label}>Transaction type</Text>
+      <Text style={[styles.label, styles.primaryLabel]}>Amount (₹)</Text>
+      <TextInput
+        value={amount}
+        onChangeText={handleAmountChange}
+        keyboardType="decimal-pad"
+        placeholder="0.00"
+        maxLength={18}
+        editable={!submitting}
+        accessibilityLabel="Amount in rupees"
+        accessibilityHint="Enter an amount in rupees and paise, for example 125 or 125.50"
+        style={[
+          styles.input,
+          styles.amountInput,
+          errors.amountMinor ? styles.inputError : null,
+        ]}
+      />
+      {errors.amountMinor ? (
+        <Text
+          style={styles.errorText}
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
+        >
+          {errors.amountMinor}
+        </Text>
+      ) : (
+        <Text style={styles.helperText}>Indian rupees · up to 2 decimals (paise)</Text>
+      )}
+
+      <Text style={[styles.label, styles.labelSpaced]}>Transaction type</Text>
       <View style={styles.segment} accessibilityRole="radiogroup">
         {OPTIONS.map((option) => {
           const selected = type === option.value;
@@ -231,54 +259,6 @@ export default function TransactionForm({
         })}
       </View>
 
-      <Text style={[styles.label, styles.labelSpaced]}>Amount (₹)</Text>
-      <TextInput
-        value={amount}
-        onChangeText={handleAmountChange}
-        keyboardType="decimal-pad"
-        placeholder="0.00"
-        maxLength={18}
-        editable={!submitting}
-        accessibilityLabel="Amount in rupees"
-        accessibilityHint="Enter an amount in rupees and paise, for example 125 or 125.50"
-        style={[styles.input, errors.amountMinor ? styles.inputError : null]}
-      />
-      {errors.amountMinor ? (
-        <Text
-          style={styles.errorText}
-          accessibilityRole="alert"
-          accessibilityLiveRegion="polite"
-        >
-          {errors.amountMinor}
-        </Text>
-      ) : (
-        <Text style={styles.helperText}>Indian rupees · up to 2 decimals (paise)</Text>
-      )}
-
-      <Text style={[styles.label, styles.labelSpaced]}>Date</Text>
-      <TextInput
-        value={date}
-        onChangeText={setDate}
-        placeholder="YYYY-MM-DD"
-        maxLength={10}
-        autoCapitalize="none"
-        editable={!submitting}
-        accessibilityLabel="Date in YYYY-MM-DD format"
-        accessibilityHint="Enter a calendar date, for example 2026-11-21"
-        style={[styles.input, errors.date ? styles.inputError : null]}
-      />
-      {errors.date ? (
-        <Text
-          style={styles.errorText}
-          accessibilityRole="alert"
-          accessibilityLiveRegion="polite"
-        >
-          {errors.date}
-        </Text>
-      ) : (
-        <Text style={styles.helperText}>Format: YYYY-MM-DD</Text>
-      )}
-
       <Text style={[styles.label, styles.labelSpaced]}>Category</Text>
       <CategoryPicker
         categories={categoriesForType}
@@ -305,6 +285,30 @@ export default function TransactionForm({
           {errors.categoryId}
         </Text>
       ) : null}
+
+      <Text style={[styles.label, styles.labelSpaced]}>Date</Text>
+      <TextInput
+        value={date}
+        onChangeText={setDate}
+        placeholder="YYYY-MM-DD"
+        maxLength={10}
+        autoCapitalize="none"
+        editable={!submitting}
+        accessibilityLabel="Date in YYYY-MM-DD format"
+        accessibilityHint="Enter a calendar date, for example 2026-11-21"
+        style={[styles.input, errors.date ? styles.inputError : null]}
+      />
+      {errors.date ? (
+        <Text
+          style={styles.errorText}
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
+        >
+          {errors.date}
+        </Text>
+      ) : (
+        <Text style={styles.helperText}>Format: YYYY-MM-DD</Text>
+      )}
 
       <Text style={[styles.label, styles.labelSpaced]}>Description (optional)</Text>
       <TextInput
@@ -376,6 +380,9 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   labelSpaced: {
     marginTop: spacing.lg,
   },
+  primaryLabel: {
+    fontSize: fontSize.heading,
+  },
   segment: {
     marginTop: spacing.sm,
     flexDirection: 'row',
@@ -418,6 +425,11 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingVertical: spacing.sm,
     fontSize: fontSize.body,
     color: colors.text,
+  },
+  amountInput: {
+    fontSize: fontSize.heading,
+    fontWeight: '700',
+    color: colors.primary,
   },
   multiline: {
     minHeight: 84,

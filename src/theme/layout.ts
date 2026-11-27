@@ -1,6 +1,12 @@
 import type { ViewStyle } from 'react-native';
 
-import { spacing } from './theme';
+import { minTouchTarget, spacing } from './theme';
+
+/** Spread into interactive control styles on the primary tabs and Settings. */
+export const touchTargetStyle: ViewStyle = {
+  minHeight: minTouchTarget,
+  minWidth: minTouchTarget,
+};
 
 export const responsivePageWidthStyle: ViewStyle = {
   alignSelf: 'center',

@@ -39,7 +39,7 @@ import {
 import type { RootStackParamList, RootTabParamList } from '../navigation/types';
 import type { NewTransactionInput, Transaction } from '../storage';
 import { useTransactions } from '../state/TransactionsContext';
-import { responsivePageWidthStyle } from '../theme/layout';
+import { responsivePageWidthStyle, touchTargetStyle } from '../theme/layout';
 import { useTheme, useThemedStyles } from '../theme/ThemeContext';
 import { type ThemeColors, fontSize, radius, spacing } from '../theme/theme';
 
@@ -341,13 +341,18 @@ export default function HistoryScreen() {
               </Pressable>
             </View>
           ) : (
-            <TransactionList
-              transactions={visible}
-              refreshing={refreshing}
-              onRefresh={() => void handleRefresh()}
-              onEdit={setEditing}
-              onDelete={handleDelete}
-            />
+            <>
+              <Text style={styles.sectionTitle} accessibilityRole="header">
+                Entries
+              </Text>
+              <TransactionList
+                transactions={visible}
+                refreshing={refreshing}
+                onRefresh={() => void handleRefresh()}
+                onEdit={setEditing}
+                onDelete={handleDelete}
+              />
+            </>
           )}
         </>
       ) : null}
@@ -392,9 +397,16 @@ const createStyles = (colors: ThemeColors) =>
       fontSize: fontSize.body,
       color: colors.textPrimary,
     },
+    sectionTitle: {
+      ...responsivePageWidthStyle,
+      paddingHorizontal: spacing.md,
+      marginBottom: spacing.sm,
+      fontSize: fontSize.heading,
+      fontWeight: '700',
+      color: colors.text,
+    },
     clearSearchButton: {
-      minHeight: 48,
-      minWidth: 48,
+      ...touchTargetStyle,
       marginLeft: spacing.sm,
       alignItems: 'center',
       justifyContent: 'center',
@@ -419,7 +431,7 @@ const createStyles = (colors: ThemeColors) =>
       paddingRight: spacing.md,
     },
     tagChip: {
-      minHeight: 48,
+      ...touchTargetStyle,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
       borderRadius: radius.pill,
@@ -472,8 +484,8 @@ const createStyles = (colors: ThemeColors) =>
       textAlign: 'center',
     },
     button: {
+      ...touchTargetStyle,
       marginTop: spacing.xl,
-      minHeight: 48,
       borderRadius: radius.md,
       backgroundColor: colors.primary,
       paddingHorizontal: spacing.xl,

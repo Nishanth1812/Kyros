@@ -24,7 +24,7 @@ import type { RootStackParamList, RootTabParamList } from '../navigation/types';
 import { useTransactions } from '../state/TransactionsContext';
 import { validateBackupPayload } from '../storage/backupValidation';
 import type { SyncStorageInfo } from '../storage/types';
-import { responsivePageContentStyle } from '../theme/layout';
+import { responsivePageContentStyle, touchTargetStyle } from '../theme/layout';
 import { useTheme, useThemedStyles } from '../theme/ThemeContext';
 import { type ThemeColors, elevation, fontSize, radius, spacing } from '../theme/theme';
 
@@ -217,7 +217,9 @@ export default function DataManagementScreen() {
 
       {/* Database Overview Card */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Stored Records Overview</Text>
+        <Text style={styles.cardTitle} accessibilityRole="header">
+          Stored Records Overview
+        </Text>
         <Text style={styles.cardSubtitle}>
           All data is stored purely locally on your device in offline SQLite storage.
         </Text>
@@ -257,7 +259,9 @@ export default function DataManagementScreen() {
 
       {/* Sync Readiness Card */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Sync Readiness (Local Only)</Text>
+        <Text style={styles.cardTitle} accessibilityRole="header">
+          Sync Readiness (Local Only)
+        </Text>
         <Text style={styles.cardSubtitle}>
           Offline-first delta engine status. No network transport is configured; local
           SQLite remains the source of truth.
@@ -277,9 +281,19 @@ export default function DataManagementScreen() {
         )}
       </View>
 
-      {/* CSV Spreadsheet Export Card */}
+      {/* Grouped export, backup and restore actions */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Spreadsheet Report (CSV)</Text>
+        <Text style={styles.cardTitle} accessibilityRole="header">
+          Backup, export & restore
+        </Text>
+        <Text style={styles.cardSubtitle}>
+          Your records stay on this device. Export a copy before restoring or
+          replacing any data.
+        </Text>
+
+        <Text style={styles.actionTitle} accessibilityRole="header">
+          Spreadsheet report (CSV)
+        </Text>
         <Text style={styles.cardDescription}>
           Export all transactions into a standard comma-separated (.csv) spreadsheet file readable by Google Sheets, Microsoft Excel, or personal accounting software.
         </Text>
@@ -299,11 +313,12 @@ export default function DataManagementScreen() {
             <Text style={styles.outlineButtonText}>Export Transactions (CSV)</Text>
           )}
         </TouchableOpacity>
-      </View>
 
-      {/* JSON Backup & Restore Card */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Backup & Recovery (JSON)</Text>
+        <View style={styles.divider} />
+
+        <Text style={styles.actionTitle} accessibilityRole="header">
+          JSON backup
+        </Text>
         <Text style={styles.cardDescription}>
           Export a complete, portable JSON backup of your transactions, categories, and budgets using Android's file manager. You can safely store it anywhere or use it to restore your data.
         </Text>
@@ -326,6 +341,9 @@ export default function DataManagementScreen() {
 
         <View style={styles.divider} />
 
+        <Text style={styles.actionTitle} accessibilityRole="header">
+          Restore from backup
+        </Text>
         <Text style={styles.cardDescription}>
           Restore your data from a previous Kyros backup file. Restoring will validate the file format and completely replace the data currently on this device.
         </Text>
@@ -371,8 +389,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderWidth: 1,
   },
   bannerText: {
-    fontSize: fontSize.caption,
-    fontWeight: '500',
+    fontSize: fontSize.body,
+    fontWeight: '600',
   },
   bannerTextSuccess: {
     color: colors.income,
@@ -397,6 +415,12 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: fontSize.caption,
     color: colors.textMuted,
     marginBottom: spacing.md,
+  },
+  actionTitle: {
+    fontSize: fontSize.heading,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: spacing.xs,
   },
   cardDescription: {
     fontSize: fontSize.body,
@@ -428,16 +452,16 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginTop: spacing.xs,
   },
   statDetail: {
-    fontSize: 10,
+    fontSize: fontSize.caption,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   outlineButton: {
+    ...touchTargetStyle,
     backgroundColor: colors.subtleGreen,
     borderColor: colors.primary,
     borderWidth: 1.5,
     borderRadius: radius.md,
-    minHeight: 48,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.md,
@@ -448,9 +472,9 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontWeight: '700',
   },
   primaryButton: {
+    ...touchTargetStyle,
     backgroundColor: colors.primary,
     borderRadius: radius.md,
-    minHeight: 48,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.md,
@@ -462,11 +486,11 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontWeight: '700',
   },
   secondaryButton: {
+    ...touchTargetStyle,
     backgroundColor: 'transparent',
     borderColor: colors.primary,
     borderWidth: 1.5,
     borderRadius: radius.md,
-    minHeight: 48,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.md,
@@ -485,7 +509,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginVertical: spacing.lg,
   },
   manageCategoriesButton: {
-    minHeight: 48,
+    ...touchTargetStyle,
     backgroundColor: colors.subtleGreen,
     borderWidth: 1,
     borderColor: colors.primary,

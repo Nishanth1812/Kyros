@@ -29,7 +29,7 @@ import { formatMinorUnits } from '../lib/money';
 import type { RootStackParamList, RootTabParamList } from '../navigation/types';
 import type { Budget, NewBudgetInput } from '../storage';
 import { useTransactions } from '../state/TransactionsContext';
-import { responsivePageContentStyle } from '../theme/layout';
+import { responsivePageContentStyle, touchTargetStyle } from '../theme/layout';
 import { useTheme, useThemedStyles } from '../theme/ThemeContext';
 import { type ThemeColors, elevation, fontSize, radius, spacing } from '../theme/theme';
 
@@ -62,6 +62,18 @@ function BudgetProgressDetails({
       : threshold.status === 'warning'
         ? `Approaching limit (${threshold.percentUsed}% used)`
         : `Remaining ${formatMinorUnits(progress.remainingMinor)}`;
+  const remainingLabel =
+    threshold.status === 'danger' ? 'Over by' : 'Remaining';
+  const remainingValue =
+    threshold.status === 'danger'
+      ? formatMinorUnits(threshold.overspentMinor)
+      : formatMinorUnits(progress.remainingMinor);
+  const remainingStyle =
+    threshold.status === 'danger'
+      ? styles.figureValueDanger
+      : threshold.status === 'warning'
+        ? styles.figureValueWarning
+        : styles.figureValueNormal;
 
   return (
     <View
@@ -71,10 +83,18 @@ function BudgetProgressDetails({
         progress.spentMinor
       )} of ${formatMinorUnits(progress.budgetMinor)} this month. ${status}.`}
     >
-      <Text style={styles.progressSpent}>
-        Spent {formatMinorUnits(progress.spentMinor)} of{' '}
-        {formatMinorUnits(progress.budgetMinor)}
-      </Text>
+      <View style={styles.progressFigures}>
+        <View style={styles.figure}>
+          <Text style={styles.figureLabel}>Used</Text>
+          <Text style={styles.figureValue}>
+            {formatMinorUnits(progress.spentMinor)}
+          </Text>
+        </View>
+        <View style={styles.figure}>
+          <Text style={styles.figureLabel}>{remainingLabel}</Text>
+          <Text style={[styles.figureValue, remainingStyle]}>{remainingValue}</Text>
+        </View>
+      </View>
       <View style={styles.progressTrack}>
         <View
           style={[
@@ -85,9 +105,7 @@ function BudgetProgressDetails({
           ]}
         />
       </View>
-      {threshold.status === 'normal' ? (
-        <Text style={styles.progressStatus}>{status}</Text>
-      ) : (
+      {threshold.status === 'normal' ? null : (
         <View
           style={[
             styles.statusBadge,
@@ -471,10 +489,10 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.background,
   },
   goalsCard: {
+    ...touchTargetStyle,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    minHeight: 48,
     backgroundColor: colors.surface,
     borderRadius: radius.md,
     borderWidth: 1,
@@ -499,7 +517,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   sectionTitle: {
     marginTop: spacing.lg,
     marginBottom: spacing.sm,
-    fontSize: fontSize.label,
+    fontSize: fontSize.heading,
     fontWeight: '700',
     color: colors.text,
   },
@@ -544,7 +562,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.textMuted,
   },
   cardAction: {
-    minHeight: 48,
+    ...touchTargetStyle,
     minWidth: 56,
     borderRadius: radius.sm,
     alignItems: 'center',
@@ -569,9 +587,9 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.textMuted,
   },
   setAction: {
+    ...touchTargetStyle,
     marginTop: spacing.sm,
     alignSelf: 'flex-start',
-    minHeight: 48,
     justifyContent: 'center',
     paddingHorizontal: spacing.sm,
   },
@@ -595,11 +613,35 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     textAlign: 'center',
   },
   progressBlock: {
-    marginTop: spacing.sm,
+    marginTop: spacing.md,
   },
-  progressSpent: {
-    fontSize: fontSize.small,
+  progressFigures: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  figure: {
+    flex: 1,
+  },
+  figureLabel: {
+    fontSize: fontSize.caption,
+    fontWeight: '600',
     color: colors.textMuted,
+    textTransform: 'uppercase',
+  },
+  figureValue: {
+    marginTop: spacing.xs,
+    fontSize: fontSize.body,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  figureValueNormal: {
+    color: colors.income,
+  },
+  figureValueWarning: {
+    color: colors.warning,
+  },
+  figureValueDanger: {
+    color: colors.danger,
   },
   progressTrack: {
     height: 8,
@@ -618,12 +660,6 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   progressFillDanger: {
     backgroundColor: colors.expense,
-  },
-  progressStatus: {
-    marginTop: spacing.xs,
-    fontSize: fontSize.body,
-    fontWeight: '700',
-    color: colors.income,
   },
   statusBadge: {
     marginTop: spacing.xs,

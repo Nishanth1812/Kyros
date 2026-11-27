@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import ScreenHeader from '../components/ScreenHeader';
 import type { RootStackParamList } from '../navigation/types';
-import { responsivePageContentStyle } from '../theme/layout';
+import { responsivePageContentStyle, touchTargetStyle } from '../theme/layout';
 import { useTheme, useThemedStyles } from '../theme/ThemeContext';
 import {
   type ThemeColors,
@@ -53,7 +53,9 @@ export default function SettingsScreen({ navigation }: Props) {
       />
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Appearance</Text>
+        <Text style={styles.cardTitle} accessibilityRole="header">
+          Appearance
+        </Text>
         <Text style={styles.cardSubtitle}>
           Choose how Kyros looks. System follows your device setting.
         </Text>
@@ -71,10 +73,12 @@ export default function SettingsScreen({ navigation }: Props) {
                 accessible
                 accessibilityRole="radio"
                 accessibilityLabel={`${option.label} theme`}
+                accessibilityHint="Applies immediately and is saved on this device"
                 accessibilityState={{ selected }}
-                style={[
+                style={({ pressed }) => [
                   styles.themeOption,
                   selected ? styles.themeOptionSelected : null,
+                  pressed ? styles.pressed : null,
                 ]}
               >
                 <Text
@@ -92,7 +96,9 @@ export default function SettingsScreen({ navigation }: Props) {
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>About Kyros</Text>
+        <Text style={styles.cardTitle} accessibilityRole="header">
+          About Kyros
+        </Text>
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Version</Text>
           <Text style={styles.infoValue}>{packageJson.version}</Text>
@@ -115,9 +121,8 @@ const createStyles = (colors: ThemeColors) =>
       backgroundColor: colors.background,
     },
     backButton: {
+      ...touchTargetStyle,
       alignSelf: 'flex-start',
-      minHeight: 48,
-      minWidth: 48,
       justifyContent: 'center',
       paddingHorizontal: spacing.sm,
       marginBottom: spacing.sm,
@@ -153,8 +158,8 @@ const createStyles = (colors: ThemeColors) =>
       gap: spacing.sm,
     },
     themeOption: {
+      ...touchTargetStyle,
       flex: 1,
-      minHeight: 48,
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: radius.md,

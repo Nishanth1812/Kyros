@@ -7,7 +7,10 @@ import {
   contrastRatio,
   darkColors,
   elevation,
+  fontSize,
   lightColors,
+  minTouchTarget,
+  spacing,
   type ThemeColors,
 } from '../src/theme/theme';
 import { createBunSqliteAdapter } from './helpers/bunSqliteAdapter';
@@ -61,6 +64,10 @@ describe('Dynamic theme palette', () => {
 
   test('test_elevation_uses_a_neutral_shadow_readable_in_both_modes', () => {
     expect(elevation.shadowColor).toBe('#000000');
+  });
+
+  test('test_touch_target_token_tracks_the_type_and_spacing_scale', () => {
+    expect(minTouchTarget).toBeGreaterThanOrEqual(fontSize.title + spacing.md);
   });
 });
 

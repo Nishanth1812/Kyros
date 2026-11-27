@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { touchTargetStyle } from '../theme/layout';
 import { useThemedStyles } from '../theme/ThemeContext';
 import { type ThemeColors, fontSize, radius, spacing } from '../theme/theme';
 
@@ -62,8 +63,7 @@ const createStyles = (colors: ThemeColors) =>
       color: colors.textMuted,
     },
     settingsButton: {
-      minHeight: 48,
-      minWidth: 48,
+      ...touchTargetStyle,
       marginLeft: spacing.sm,
       alignItems: 'center',
       justifyContent: 'center',

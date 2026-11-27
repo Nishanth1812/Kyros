@@ -29,7 +29,7 @@ import { formatMinorUnits } from '../lib/money';
 import { summarizeTransactions, type DashboardSummary } from '../lib/summaries';
 import type { RootStackParamList, RootTabParamList } from '../navigation/types';
 import { useTransactions } from '../state/TransactionsContext';
-import { responsivePageContentStyle } from '../theme/layout';
+import { responsivePageContentStyle, touchTargetStyle } from '../theme/layout';
 import { useTheme, useThemedStyles } from '../theme/ThemeContext';
 import { type ThemeColors, elevation, fontSize, radius, spacing } from '../theme/theme';
 import RecurringReviewBanner from '../components/RecurringReviewBanner';
@@ -161,7 +161,9 @@ export default function DashboardScreen() {
                 </Pressable>
 
                 <View style={styles.monthCenter}>
-                  <Text style={styles.monthTitle}>{selectedScope.label}</Text>
+                  <Text style={styles.monthTitle} accessibilityRole="header">
+                    {selectedScope.label}
+                  </Text>
                   {!isCurrentMonth && (
                     <Pressable
                       onPress={() => setSelectedScope(currentScope)}
@@ -326,8 +328,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     ...elevation,
   },
   navBtn: {
-    minHeight: 48,
-    minWidth: 48,
+    ...touchTargetStyle,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.sm,
@@ -350,19 +351,21 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
   },
   monthTitle: {
-    fontSize: fontSize.body,
+    fontSize: fontSize.heading,
     fontWeight: '700',
     color: colors.text,
   },
   currentMonthBadge: {
-    marginTop: 2,
+    ...touchTargetStyle,
+    marginTop: spacing.xs,
     backgroundColor: colors.subtleGreen,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: radius.pill,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   currentMonthBadgeText: {
-    fontSize: 10,
+    fontSize: fontSize.caption,
     fontWeight: '700',
     color: colors.primary,
   },
@@ -414,6 +417,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginVertical: spacing.sm,
   },
   analyticsEntryCard: {
+    ...touchTargetStyle,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -422,7 +426,6 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderWidth: 1,
     borderRadius: radius.md,
     padding: spacing.md,
-    minHeight: 48,
     marginBottom: spacing.md,
   },
   analyticsEntryLeft: {

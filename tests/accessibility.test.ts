@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
-import { colors, fontSize, radius, spacing } from '../src/theme/theme';
+import { touchTargetStyle } from '../src/theme/layout';
+import { colors, fontSize, minTouchTarget, spacing } from '../src/theme/theme';
 
 describe('Accessibility and Layout Standards', () => {
   it('enforces accessible text sizes with appropriate hierarchy', () => {
@@ -19,9 +20,12 @@ describe('Accessibility and Layout Standards', () => {
     expect(colors.expense).toBeDefined();
   });
 
-  it('guarantees touch target minimums of at least 48dp', () => {
-    // 48dp touch target standard from Android Material and WCAG guidelines
-    const minTargetDp = 48;
-    expect(minTargetDp).toBe(48);
+  it('keeps interactive targets at 48dp through the shared app style', () => {
+    // The target is an app-owned token derived from the type and spacing
+    // scale, shared with the primary screens and Settings via `touchTargetStyle`.
+    expect(touchTargetStyle.minHeight).toBe(minTouchTarget);
+    expect(touchTargetStyle.minWidth).toBe(minTouchTarget);
+    expect(minTouchTarget).toBeGreaterThanOrEqual(fontSize.heading + spacing.lg);
+    expect(minTouchTarget).toBeGreaterThanOrEqual(48);
   });
 });
