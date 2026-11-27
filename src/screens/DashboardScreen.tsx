@@ -213,6 +213,23 @@ export default function DashboardScreen() {
                     {formatMinorUnits(summary.periodExpenseMinor)}
                   </Text>
                 </View>
+                <View style={styles.divider} />
+                <View
+                  style={styles.metricRow}
+                  accessible
+                  accessibilityLabel={`Savings rate for ${selectedScope.label} ${
+                    analytics.savingsRate === null
+                      ? 'Not available'
+                      : `${analytics.savingsRate} percent`
+                  }`}
+                >
+                  <Text style={styles.metricLabel}>Savings Rate</Text>
+                  <Text style={[styles.metricValue, styles.savingsText]}>
+                    {analytics.savingsRate === null
+                      ? 'Not available'
+                      : `${analytics.savingsRate}%`}
+                  </Text>
+                </View>
               </View>
 
               {/* Insights and Analytics Entry Point */}
@@ -386,6 +403,9 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   expenseText: {
     color: colors.expense,
+  },
+  savingsText: {
+    color: colors.text,
   },
   divider: {
     height: 1,

@@ -112,7 +112,59 @@ describe('analytics engine', () => {
     expect(analytics.netBalanceMinor).toBe(0);
     expect(analytics.categoryBreakdown.length).toBe(0);
     expect(analytics.topExpenseCategory).toBeNull();
-    expect(analytics.savingsRate).toBe(0);
+    expect(analytics.savingsRate).toBeNull();
+  });
+
+  it('returns a negative savings rate when expenses exceed income', () => {
+    const scope = getMonthScope(new Date(2026, 10, 1)); // Nov 2026
+    const transactions: Transaction[] = [
+      {
+        id: 1,
+        type: 'income',
+        amountMinor: 1000000, // ₹10,000
+        date: '2026-11-01',
+        description: 'Paycheck',
+        createdAt: 1000,
+        categoryId: 3,
+      },
+      {
+        id: 2,
+        type: 'expense',
+        amountMinor: 1500000, // ₹15,000
+        date: '2026-11-10',
+        description: 'Overspent',
+        createdAt: 2000,
+        categoryId: 1,
+      },
+    ];
+
+    const analytics = calculateMonthAnalytics(transactions, categories, scope);
+
+    expect(analytics.totalIncomeMinor).toBe(1000000);
+    expect(analytics.totalExpenseMinor).toBe(1500000);
+    expect(analytics.netBalanceMinor).toBe(-500000);
+    expect(analytics.savingsRate).toBe(-50); // (10k - 15k) / 10k = -50%
+  });
+
+  it('returns a null savings rate when income is zero and expenses exist', () => {
+    const scope = getMonthScope(new Date(2026, 10, 1)); // Nov 2026
+    const transactions: Transaction[] = [
+      {
+        id: 1,
+        type: 'expense',
+        amountMinor: 500000, // ₹5,000
+        date: '2026-11-10',
+        description: 'Spend with no income',
+        createdAt: 1000,
+        categoryId: 1,
+      },
+    ];
+
+    const analytics = calculateMonthAnalytics(transactions, categories, scope);
+
+    expect(analytics.totalIncomeMinor).toBe(0);
+    expect(analytics.totalExpenseMinor).toBe(500000);
+    expect(analytics.savingsRate).toBeNull();
   });
 
   it('calculateMultiMonthTrends computes sequential monthly trends', () => {

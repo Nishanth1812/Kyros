@@ -153,7 +153,11 @@ export default function AnalyticsScreen({
           </View>
 
           <View style={styles.statBox}>
-            <Text style={styles.statValue}>{analytics.savingsRate}%</Text>
+            <Text style={styles.statValue}>
+              {analytics.savingsRate === null
+                ? 'Not available'
+                : `${analytics.savingsRate}%`}
+            </Text>
             <Text style={styles.statLabel}>Savings Rate</Text>
           </View>
 
